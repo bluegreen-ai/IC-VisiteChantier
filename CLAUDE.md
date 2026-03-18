@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-**[Project Name]** - [One sentence description]
+**IC-VisiteChantier** - Site visit report generator for IC Ingénieurs Conseils. PWA for field data capture + Python script for DOCX report generation.
 
 **Full specifications**: See `.claude/PRD.md`
 
@@ -17,10 +17,11 @@
 
 ## Tech Stack
 
-- **Language**: [e.g., TypeScript, Python]
-- **Framework**: [e.g., Next.js, FastAPI]
-- **Database**: [e.g., PostgreSQL, Supabase]
-- **Testing**: [e.g., Jest, pytest]
+- **PWA Frontend**: Vanilla JS or Preact + Vite + Tailwind
+- **Storage**: IndexedDB (via Dexie.js) — offline-first, no server
+- **Export**: JSZip for JSON + photos bundle
+- **Report Generator**: Python + python-docx + Pillow
+- **Testing**: Vitest (frontend) / pytest (Python)
 
 ---
 
@@ -35,8 +36,6 @@ Always loaded. Keep lean (<100 lines of actual rules). If removing a line wouldn
 ### Tier 2: Path-Scoped Rules (`.claude/rules/`)
 
 Auto-loaded when you work on matching files. Each rule has a `paths:` frontmatter with glob patterns.
-
-Example: `.claude/rules/frontend.md` loads when editing `src/frontend/**/*.tsx`.
 
 ### Tier 3: Reference & Deep Docs
 
@@ -87,7 +86,7 @@ Example: `.claude/rules/frontend.md` loads when editing `src/frontend/**/*.tsx`.
 - **Fix forward** — no backward compatibility, remove deprecated code immediately
 - **Fail fast** — detailed errors over graceful failures
 - **KISS / DRY / YAGNI** — simple, no repetition, no overbuilding
-- **Clean comments** — describe functionality, not changes (avoid "LEGACY", "REMOVED", "SIMPLIFIED")
+- **Offline-first** — the PWA must work without network on the field
 
 ---
 
@@ -95,7 +94,7 @@ Example: `.claude/rules/frontend.md` loads when editing `src/frontend/**/*.tsx`.
 
 - Test files: `*.test.ts` / `test_*.py`
 - Run before commit
-- Prefer integration tests over unit tests for APIs
+- Test offline scenarios for the PWA
 
 ---
 
@@ -108,10 +107,10 @@ Example: `.claude/rules/frontend.md` loads when editing `src/frontend/**/*.tsx`.
 
 ## Common Gotchas
 
-<!-- Customize for your project -->
-- Update schema when adding database fields
-- Use parameterized queries (never string concatenation)
-- Check for null before accessing nested properties
+- IndexedDB blobs can be large — always handle storage quota errors
+- Photos from mobile cameras can be 3-5MB — compress before storing
+- The DOCX template uses raw `python-docx` XML manipulation, not docxtpl
+- Export ZIP must match `render_cr_visite.py` expected format exactly
 
 ---
 
