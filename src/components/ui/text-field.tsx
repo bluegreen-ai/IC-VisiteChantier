@@ -1,3 +1,5 @@
+import { type Ref } from 'preact';
+
 interface TextFieldProps {
   label: string;
   value: string;
@@ -5,6 +7,8 @@ interface TextFieldProps {
   placeholder?: string;
   multiline?: boolean;
   rows?: number;
+  error?: string;
+  inputRef?: Ref<HTMLInputElement | HTMLTextAreaElement>;
 }
 
 export function TextField({
@@ -14,15 +18,21 @@ export function TextField({
   placeholder,
   multiline = false,
   rows = 3,
+  error,
+  inputRef,
 }: TextFieldProps) {
+  const borderClass = error
+    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+    : 'border-gray-300 focus:border-ic-blue focus:ring-ic-blue';
   const baseClass =
-    'mt-1 block w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-base shadow-sm focus:border-ic-blue focus:ring-1 focus:ring-ic-blue touch-manipulation';
+    `mt-1 block w-full min-h-[44px] rounded-lg border px-3 py-2 text-base shadow-sm focus:ring-1 touch-manipulation ${borderClass}`;
 
   return (
     <label class="block">
-      <span class="text-sm font-medium text-gray-700">{label}</span>
+      <span class={`text-sm font-medium ${error ? 'text-red-600' : 'text-gray-700'}`}>{label}</span>
       {multiline ? (
         <textarea
+          ref={inputRef as Ref<HTMLTextAreaElement>}
           value={value}
           onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
           placeholder={placeholder}
@@ -31,6 +41,7 @@ export function TextField({
         />
       ) : (
         <input
+          ref={inputRef as Ref<HTMLInputElement>}
           type="text"
           value={value}
           onInput={(e) => onChange((e.target as HTMLInputElement).value)}
@@ -38,6 +49,7 @@ export function TextField({
           class={baseClass}
         />
       )}
+      {error && <p class="mt-1 text-sm text-red-600">{error}</p>}
     </label>
   );
 }

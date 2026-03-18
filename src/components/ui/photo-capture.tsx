@@ -49,25 +49,33 @@ async function compressImage(file: File): Promise<Blob> {
 }
 
 export function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const processing = useSignal(false);
 
-  async function handleFile(e: Event) {
+  async function handleFiles(e: Event) {
     const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+    const files = input.files;
+    if (!files || files.length === 0) return;
 
+    processing.value = true;
     try {
-      const compressed = await compressImage(file);
-      const sizeMB = (compressed.size / 1024 / 1024).toFixed(1);
-      const previewUrl = URL.createObjectURL(compressed);
-
-      onChange([...photos, { blob: compressed, previewUrl, sizeMB }]);
+      const newPhotos: CapturedPhoto[] = [];
+      for (const file of Array.from(files)) {
+        const compressed = await compressImage(file);
+        const sizeMB = (compressed.size / 1024 / 1024).toFixed(1);
+        const previewUrl = URL.createObjectURL(compressed);
+        newPhotos.push({ blob: compressed, previewUrl, sizeMB });
+      }
+      onChange([...photos, ...newPhotos]);
     } catch (err) {
       console.error('Photo compression failed:', err);
+    } finally {
+      processing.value = false;
     }
 
     // Reset input so the same file can be re-selected
-    if (inputRef.current) inputRef.current.value = '';
+    input.value = '';
   }
 
   function removePhoto(index: number) {
@@ -106,20 +114,45 @@ export function PhotoCapture({ photos, onChange }: PhotoCaptureProps) {
         </div>
       )}
 
-      {/* Add photo button */}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        class="w-full min-h-[44px] border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium flex items-center justify-center gap-2 active:bg-gray-50 touch-manipulation"
-      >
-        📷 Ajouter une photo
-      </button>
+      {/* Dual photo buttons: camera + gallery */}
+      <div class="flex gap-2">
+        <button
+          type="button"
+          onClick={() => cameraRef.current?.click()}
+          disabled={processing.value}
+          class="flex-1 min-h-[44px] border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium flex items-center justify-center gap-1.5 active:bg-gray-50 touch-manipulation disabled:opacity-50"
+        >
+          📷 Appareil
+        </button>
+        <button
+          type="button"
+          onClick={() => galleryRef.current?.click()}
+          disabled={processing.value}
+          class="flex-1 min-h-[44px] border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium flex items-center justify-center gap-1.5 active:bg-gray-50 touch-manipulation disabled:opacity-50"
+        >
+          🖼️ Galerie
+        </button>
+      </div>
+      {processing.value && (
+        <p class="text-xs text-gray-400 text-center">Compression en cours…</p>
+      )}
+
+      {/* Camera input — opens camera directly */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
         capture="environment"
-        onChange={handleFile}
+        onChange={handleFiles}
+        class="hidden"
+      />
+      {/* Gallery input — opens photo picker, allows multiple */}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFiles}
         class="hidden"
       />
     </div>

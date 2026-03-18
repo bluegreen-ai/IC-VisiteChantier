@@ -1,5 +1,5 @@
 import { useSignal } from '@preact/signals';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { SelectField } from './ui/select-field';
 import { TextField } from './ui/text-field';
 import { PhotoCapture } from './ui/photo-capture';
@@ -26,6 +26,8 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
   const existingPhotoIds = useSignal<number[]>([]);
   const saving = useSignal(false);
   const error = useSignal('');
+  const observationError = useSignal('');
+  const observationRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const formKey = useSignal(0);
 
   const isEditing = !!editingObservation;
@@ -66,6 +68,7 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
     photos.value = [];
     existingPhotoIds.value = [];
     error.value = '';
+    observationError.value = '';
     formKey.value++;
     // Keep batiment/etage/facade for faster same-floor capture
   }
@@ -75,10 +78,15 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
-    if (!observationText.value.trim()) return;
+    if (!observationText.value.trim()) {
+      observationError.value = 'Ce champ est obligatoire';
+      observationRef.current?.focus();
+      return;
+    }
 
     saving.value = true;
     error.value = '';
+    observationError.value = '';
 
     try {
       // Save new photos to IndexedDB
@@ -185,8 +193,10 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
       <TextField
         label="Observation"
         value={observationText.value}
-        onChange={(v) => (observationText.value = v)}
+        onChange={(v) => { observationText.value = v; if (v.trim()) observationError.value = ''; }}
         placeholder="Description de l'observation..."
+        error={observationError.value}
+        inputRef={observationRef}
       />
 
       <TextField
@@ -207,7 +217,7 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
 
       <button
         type="submit"
-        disabled={saving.value || !observationText.value.trim()}
+        disabled={saving.value}
         class="w-full min-h-[48px] bg-ic-blue text-white font-medium rounded-lg px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100"
       >
         {saving.value
