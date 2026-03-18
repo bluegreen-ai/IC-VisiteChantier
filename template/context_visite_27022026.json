@@ -1,0 +1,148 @@
+{
+    "titre_service": "Suivi de réfection des balcons - Lot 12",
+    "client": "SDC Le Gros Saule",
+    "residence": "Résidence Savigny Impair",
+    "batiments_visites": "Bâtiment A",
+    "adresse": "1-50 avenue de Savigny",
+    "code_postal_ville": "93600 Aulnay-sous-Bois",
+    "ref_dossier": "DE0328",
+    "date_visite": "27 février 2026",
+    "participants": [
+        {
+            "nom": "R. Laborbe",
+            "fonction": "M.O Lot 12",
+            "entreprise": "IC Ingénieurs Conseils",
+            "contact": "06 50 96 61 98"
+        },
+        {
+            "nom": "A. Plassart",
+            "fonction": "Ingénieur Travaux",
+            "entreprise": "Bouygues Bâtiment",
+            "contact": "06 66 87 96 80"
+        }
+    ],
+    "objet_visite": "IC Ingénieurs Conseils assure le suivi de chantier de la réfection des balcons de la résidence Savigny Impair à Aulnay-sous-Bois pour le compte de la SDC Le Gros Saule.\n\nCette visite bimensuelle du 27 février 2026 porte sur le Bâtiment A. L'objectif est de contrôler l'avancement des travaux et la qualité des prestations réalisées par l'entreprise Bouygues Bâtiment.",
+    "synthese": "L'inspection a permis d'identifier 17 points d'observation répartis sur 7 étages du Bâtiment A. L'état général est satisfaisant avec une nette amélioration par rapport aux visites précédentes.\n\nLes principaux points de vigilance concernent :\n• Le calage des garde-corps (2ème, 10ème)\n• Les pentes d'écoulement (2ème Sud, 7ème Ouest)\n• Les finitions SEL et couvertines (3ème, 6ème)\n• L'étanchéité des seuils (9ème)\n• Le stockage des garde-corps du Bâtiment B sur les échafaudages du Bâtiment A",
+    "observations": [
+        {
+            "ref": "V1-01",
+            "etage_facade": "10ème — Façade Est",
+            "observation": "Traces de truelle sur revêtement balcon",
+            "action": "Reprendre les traces de truelle",
+            "photo": "page02_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-02",
+            "etage_facade": "10ème — Façade Ouest",
+            "observation": "Cale de garde-corps à reprendre",
+            "action": "Recaler correctement",
+            "photo": "page03_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-03",
+            "etage_facade": "9ème — Façade Ouest",
+            "observation": "Écart entre panneaux garde-corps, isolant apparent",
+            "action": "Combler l'écart, masquer l'isolant",
+            "photo": "page09_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-04",
+            "etage_facade": "9ème",
+            "observation": "Seuil non-étanche",
+            "action": "Assurer l'étanchéité du seuil",
+            "photo": "page10_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-05",
+            "etage_facade": "9ème",
+            "observation": "Conformité plaque à vérifier",
+            "action": "Vérifier la conformité de la plaque",
+            "photo": "page04_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-06",
+            "etage_facade": "8ème",
+            "observation": "Finition jonction garde-corps/mur à reprendre après dépose échafaudage",
+            "action": "Reprendre après dépose échafaudage",
+            "photo": "page05_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-07",
+            "etage_facade": "8ème",
+            "observation": "Fissure sur couvertine/muret (marquée scotch orange)",
+            "action": "Traiter la fissure",
+            "photo": "page06_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-08",
+            "etage_facade": "8ème",
+            "observation": "Sol balcon à nettoyer, résidus à couper",
+            "action": "Nettoyer et couper les résidus",
+            "photo": "page07_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-09",
+            "etage_facade": "8ème",
+            "observation": "Écoulement eau à vérifier. Conformité plaque à vérifier.",
+            "action": "Vérifier écoulement et conformité plaque",
+            "photo": "page08_img1_2500x1875.jpeg"
+        },
+        {
+            "ref": "V1-10",
+            "etage_facade": "7ème — Façade Ouest",
+            "observation": "Pente de couvertine anormale",
+            "action": "Reprendre la pente pour assurer l'écoulement",
+            "photo": "page11_img1_2500x1875.jpeg"
+        },
+        {
+            "ref": "V1-11",
+            "etage_facade": "6ème",
+            "observation": "Capots de finition manquants sur couvertines",
+            "action": "Poser les capots de vis manquants",
+            "photo": "page12_img1_2500x1875.jpeg"
+        },
+        {
+            "ref": "V1-12",
+            "etage_facade": "3ème — Façade Ouest",
+            "observation": "Finition de la pose du SEL à améliorer",
+            "action": "Reprendre la finition du SEL",
+            "photo": "page15_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-13",
+            "etage_facade": "2ème — Façade Est",
+            "observation": "Écart sous garde-corps, isolant apparent. Cale mal mise.",
+            "action": "Corriger le calage, masquer l'isolant",
+            "photo": "page16_img1_2500x1875.jpeg"
+        },
+        {
+            "ref": "V1-14",
+            "etage_facade": "2ème",
+            "observation": "Cale mal mise. Garde-corps à resserrer.",
+            "action": "Recaler et resserrer le garde-corps",
+            "photo": "page17_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-15",
+            "etage_facade": "2ème — Façade Nord",
+            "observation": "Cale mal mise",
+            "action": "Recaler correctement",
+            "photo": "page18_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-16",
+            "etage_facade": "2ème — Façade Sud",
+            "observation": "Pente du balcon à refaire pour écoulement",
+            "action": "Reprendre la pente",
+            "photo": "page19_img1_1875x2500.jpeg"
+        },
+        {
+            "ref": "V1-17",
+            "etage_facade": "Général",
+            "observation": "Garde-corps Bât. B entreposés sur échafaudages Bât. A — à ranger rapidement pour éviter manque sur Bât. B",
+            "action": "Ranger rapidement les garde-corps",
+            "photo": "page14_img1_1875x2500.jpeg"
+        }
+    ],
+    "conclusion": "La visite du 27 février 2026 confirme une nette progression des travaux de réfection des balcons sur le Bâtiment A.\n\nPoints de vigilance :\n• Certaines plaques de support des balcons sont à reposer\n• Des pentes sont à refaire pour assurer l'écoulement de l'eau\n• Les garde-corps du Bâtiment B étaient posés sur les échafaudages du Bâtiment A — il faut les ranger rapidement"
+}
