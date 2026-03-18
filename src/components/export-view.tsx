@@ -34,7 +34,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
     loaded.value = true;
   }
 
-  const photoCount = observations?.filter((o) => o.photoId).length ?? 0;
+  const photoCount = observations?.reduce((sum, o) => sum + (o.photoIds?.length ?? 0), 0) ?? 0;
 
   async function handleExport() {
     exporting.value = true;
@@ -102,7 +102,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
                     {[obs.cage, obs.etage, obs.facade ? `F.${obs.facade}` : ''].filter(Boolean).join(' — ')}
                   </td>
                   <td class="px-2 py-1.5 text-xs truncate max-w-[150px]">{obs.observation}</td>
-                  <td class="px-2 py-1.5 text-center">{obs.photoId ? '✓' : ''}</td>
+                  <td class="px-2 py-1.5 text-center">{obs.photoIds?.length ? `${obs.photoIds.length}` : ''}</td>
                 </tr>
               ))}
             </tbody>

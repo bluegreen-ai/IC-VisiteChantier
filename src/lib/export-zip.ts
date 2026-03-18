@@ -20,8 +20,8 @@ export async function exportVisiteZip(visiteId: number): Promise<Blob> {
     const obs = observations[i];
     let photoFilename = '';
 
-    if (obs.photoId) {
-      const photo = await db.photos.get(obs.photoId);
+    if (obs.photoIds?.length) {
+      const photo = await db.photos.get(obs.photoIds[0]);
       if (photo) {
         photoFilename = `obs-${String(i + 1).padStart(3, '0')}.jpg`;
         photosFolder.file(photoFilename, photo.blob, { compression: 'STORE' });

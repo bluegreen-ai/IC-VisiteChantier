@@ -48,7 +48,7 @@ export interface Observation {
   facade: string;
   observation: string;
   action: string;
-  photoId?: number;
+  photoIds: number[];
   createdAt: string;
 }
 

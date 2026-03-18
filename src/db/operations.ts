@@ -49,8 +49,11 @@ export async function updateObservation(
 }
 
 export async function deleteObservation(id: number): Promise<void> {
+  const obs = await db.observations.get(id);
   await db.transaction('rw', [db.observations, db.photos], async () => {
-    await db.photos.where('observationId').equals(id).delete();
+    if (obs?.photoIds?.length) {
+      await db.photos.bulkDelete(obs.photoIds);
+    }
     await db.observations.delete(id);
   });
 }
@@ -76,6 +79,12 @@ export async function savePhoto(
 
 export async function getPhoto(id: number): Promise<Photo | undefined> {
   return db.photos.get(id);
+}
+
+export async function getPhotos(ids: number[]): Promise<Photo[]> {
+  if (!ids.length) return [];
+  const photos = await db.photos.bulkGet(ids);
+  return photos.filter((p): p is Photo => p !== undefined);
 }
 
 export async function deletePhoto(id: number): Promise<void> {

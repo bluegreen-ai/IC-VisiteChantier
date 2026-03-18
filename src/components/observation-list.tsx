@@ -20,7 +20,7 @@ export function ObservationList({ visiteId, visitNumber, onEdit }: ObservationLi
   if (observations.length === 0) {
     return (
       <div class="text-center text-gray-400 py-8">
-        Aucune observation. Ajoutez-en une ci-dessus.
+        Aucune observation. Appuyez sur ＋ pour en ajouter.
       </div>
     );
   }
