@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ic-blue: #1F3A5F;
+  --color-ic-blue-light: #F0F4F8;
+  --color-action-orange: #804000;
+}

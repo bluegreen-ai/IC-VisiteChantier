@@ -1,0 +1,76 @@
+import JSZip from 'jszip';
+import { db } from '../db/schema';
+import type { ExportContext, ExportObservation } from '../types';
+import { generateRef } from './ref-generator';
+
+export async function exportVisiteZip(visiteId: number): Promise<Blob> {
+  const visite = await db.visites.get(visiteId);
+  if (!visite) throw new Error(`Visite ${visiteId} not found`);
+
+  const observations = await db.observations
+    .where('visiteId')
+    .equals(visiteId)
+    .sortBy('createdAt');
+
+  const zip = new JSZip();
+  const photosFolder = zip.folder('photos')!;
+
+  const exportObs: ExportObservation[] = [];
+  for (let i = 0; i < observations.length; i++) {
+    const obs = observations[i];
+    let photoFilename = '';
+
+    if (obs.photoId) {
+      const photo = await db.photos.get(obs.photoId);
+      if (photo) {
+        photoFilename = `obs-${String(i + 1).padStart(3, '0')}.jpg`;
+        photosFolder.file(photoFilename, photo.blob, { compression: 'STORE' });
+      }
+    }
+
+    exportObs.push({
+      ref: generateRef(visite.visitNumber, i),
+      etage_facade: buildEtageFacade(obs.etage, obs.facade, obs.cage),
+      observation: obs.observation,
+      action: obs.action,
+      photo: photoFilename,
+    });
+  }
+
+  const context: ExportContext = {
+    titre_service: visite.titre_service,
+    client: visite.client,
+    residence: visite.residence,
+    batiments_visites: visite.batiments_visites,
+    adresse: visite.adresse,
+    code_postal_ville: visite.code_postal_ville,
+    ref_dossier: visite.ref_dossier,
+    date_visite: visite.date_visite.toISOString().split('T')[0],
+    participants: visite.participants,
+    objet_visite: visite.objet_visite,
+    synthese: visite.synthese,
+    observations: exportObs,
+    conclusion: visite.conclusion,
+  };
+
+  zip.file('context.json', JSON.stringify(context, null, 2), { compression: 'DEFLATE' });
+
+  return zip.generateAsync({ type: 'blob' });
+}
+
+function buildEtageFacade(etage: string, facade: string, cage?: string): string {
+  const parts: string[] = [];
+  if (cage) parts.push(cage);
+  if (etage) parts.push(etage);
+  if (facade) parts.push(`Façade ${facade}`);
+  return parts.join(' — ');
+}
+
+export function triggerDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}

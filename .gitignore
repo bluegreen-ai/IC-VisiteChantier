@@ -20,6 +20,12 @@ Thumbs.db
 *.swo
 *~
 
+# Node
+node_modules/
+
+# Build output
+dist/
+
 # Logs
 *.log
 npm-debug.log*

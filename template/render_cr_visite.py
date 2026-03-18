@@ -34,6 +34,7 @@ import os
 import sys
 import argparse
 from copy import deepcopy
+from datetime import datetime
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -41,6 +42,24 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
 from PIL import Image
+
+MOIS_FR = [
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+]
+
+
+def format_date_french(iso_date: str) -> str:
+    """Convert ISO date (YYYY-MM-DD) to French format (D mois YYYY).
+
+    Passes through non-ISO strings unchanged for backward compatibility.
+    """
+    try:
+        dt = datetime.strptime(iso_date, "%Y-%m-%d")
+        return f"{dt.day} {MOIS_FR[dt.month - 1]} {dt.year}"
+    except (ValueError, TypeError):
+        return iso_date
+
 
 # === Template path ===
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -127,7 +146,7 @@ def render_cr(context, photos_dir=".", output_path="cr_visite.docx", template_pa
         "{{ adresse }}": context.get("adresse", ""),
         "{{ code_postal_ville }}": context.get("code_postal_ville", ""),
         "{{ ref_dossier }}": context.get("ref_dossier", ""),
-        "{{ date_visite }}": context.get("date_visite", ""),
+        "{{ date_visite }}": format_date_french(context.get("date_visite", "")),
         "{{ objet_visite }}": context.get("objet_visite", ""),
         "{{ synthese }}": context.get("synthese", ""),
         "{{ conclusion }}": context.get("conclusion", ""),
@@ -140,13 +159,15 @@ def render_cr(context, photos_dir=".", output_path="cr_visite.docx", template_pa
                     if key in run.text:
                         run.text = run.text.replace(key, value)
 
-    # Also replace in intro paragraph of observations section
+    # Also replace date in intro paragraph of observations section
+    date_french = format_date_french(context.get("date_visite", ""))
     for p in doc.paragraphs:
-        text = p.text
-        if "observations relevées lors de la visite" in text:
+        if "observations relevées lors de la visite" in p.text:
             for run in p.runs:
                 if "27 février 2026" in run.text:
-                    run.text = run.text.replace("27 février 2026", context.get("date_visite", ""))
+                    run.text = run.text.replace("27 février 2026", date_french)
+                elif "{{ date_visite }}" in run.text:
+                    run.text = run.text.replace("{{ date_visite }}", date_french)
 
     # === 2. Populate participants table ===
     participants = context.get("participants", [])

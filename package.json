@@ -1,0 +1,39 @@
+{
+  "name": "ic-visitechantier",
+  "version": "1.0.0",
+  "description": "Site visit report generator for IC Ingénieurs Conseils. Automates the creation of construction site inspection reports (CR Visite de Chantier) from field notes and photos.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluegreen-ai/IC-VisiteChantier.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bluegreen-ai/IC-VisiteChantier/issues"
+  },
+  "homepage": "https://github.com/bluegreen-ai/IC-VisiteChantier#readme",
+  "dependencies": {
+    "@preact/signals": "^2.8.2",
+    "dexie": "^4.3.0",
+    "dexie-react-hooks": "^4.2.0",
+    "jszip": "^3.10.1",
+    "preact": "^10.29.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0",
+    "workbox-window": "^7.4.0"
+  }
+}
