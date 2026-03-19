@@ -93,3 +93,10 @@ export function triggerDownload(blob: Blob, filename: string): void {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+
+export async function shareFile(blob: Blob, filename: string): Promise<boolean> {
+  const file = new File([blob], filename, { type: 'application/zip' });
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  await navigator.share({ files: [file], title: filename });
+  return true;
+}

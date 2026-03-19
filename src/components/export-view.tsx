@@ -2,7 +2,7 @@ import { useSignal } from '@preact/signals';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/schema';
 import { updateVisite, getVisite } from '../db/operations';
-import { exportVisiteZip, triggerDownload } from '../lib/export-zip';
+import { exportVisiteZip, triggerDownload, shareFile } from '../lib/export-zip';
 import { generateRef } from '../lib/ref-generator';
 import { TextField } from './ui/text-field';
 import type { Visite } from '../types';
@@ -16,6 +16,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
   const synthese = useSignal('');
   const conclusion = useSignal('');
   const exporting = useSignal(false);
+  const sharing = useSignal(false);
   const error = useSignal('');
   const loaded = useSignal(false);
 
@@ -36,27 +37,47 @@ export function ExportView({ visiteId }: ExportViewProps) {
 
   const photoCount = observations?.reduce((sum, o) => sum + (o.photoIds?.length ?? 0), 0) ?? 0;
 
+  async function buildZip(): Promise<{ blob: Blob; filename: string }> {
+    await updateVisite(visiteId, {
+      objet_visite: objet.value,
+      synthese: synthese.value,
+      conclusion: conclusion.value,
+    });
+
+    const blob = await exportVisiteZip(visiteId);
+    const v = await getVisite(visiteId);
+    const datePart = v?.date_visite?.toISOString().split('T')[0] ?? 'export';
+    const batPart = v?.batiments_visites?.replace(/\s+/g, '-') ?? 'visite';
+    return { blob, filename: `visite-${datePart}-${batPart}.zip` };
+  }
+
   async function handleExport() {
     exporting.value = true;
     error.value = '';
-
     try {
-      // Save text fields to visite
-      await updateVisite(visiteId, {
-        objet_visite: objet.value,
-        synthese: synthese.value,
-        conclusion: conclusion.value,
-      });
-
-      const blob = await exportVisiteZip(visiteId);
-      const v = await getVisite(visiteId);
-      const datePart = v?.date_visite?.toISOString().split('T')[0] ?? 'export';
-      const batPart = v?.batiments_visites?.replace(/\s+/g, '-') ?? 'visite';
-      triggerDownload(blob, `visite-${datePart}-${batPart}.zip`);
+      const { blob, filename } = await buildZip();
+      triggerDownload(blob, filename);
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de l\'export';
     } finally {
       exporting.value = false;
+    }
+  }
+
+  async function handleShare() {
+    sharing.value = true;
+    error.value = '';
+    try {
+      const { blob, filename } = await buildZip();
+      const shared = await shareFile(blob, filename);
+      if (!shared) {
+        triggerDownload(blob, filename);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      error.value = err instanceof Error ? err.message : 'Erreur lors du partage';
+    } finally {
+      sharing.value = false;
     }
   }
 
@@ -142,13 +163,22 @@ export function ExportView({ visiteId }: ExportViewProps) {
         <p class="text-red-600 text-sm font-medium text-center">{error.value}</p>
       )}
 
-      <button
-        onClick={handleExport}
-        disabled={exporting.value || observations.length === 0}
-        class="w-full min-h-[52px] bg-green-600 text-white font-semibold rounded-xl px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100 text-lg"
-      >
-        {exporting.value ? 'Export en cours...' : `Exporter ZIP (${observations.length} obs.)`}
-      </button>
+      <div class="space-y-2">
+        <button
+          onClick={handleShare}
+          disabled={sharing.value || exporting.value || observations.length === 0}
+          class="w-full min-h-[52px] bg-green-600 text-white font-semibold rounded-xl px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100 text-lg"
+        >
+          {sharing.value ? 'Préparation...' : `Partager ZIP (${observations.length} obs.)`}
+        </button>
+        <button
+          onClick={handleExport}
+          disabled={exporting.value || sharing.value || observations.length === 0}
+          class="w-full min-h-[44px] bg-gray-100 text-gray-700 font-medium rounded-xl px-4 py-2.5 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100 text-sm"
+        >
+          {exporting.value ? 'Téléchargement...' : 'Télécharger ZIP'}
+        </button>
+      </div>
     </div>
   );
 }
