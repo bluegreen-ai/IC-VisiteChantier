@@ -1,20 +1,18 @@
 # IC-VisiteChantier - Current Status
 
-**Last Updated**: 2026-03-18
-**Current Phase**: Phase 2 — PWA Field Data Capture
-**Target**: MVP for next site visit
+**Last Updated**: 2026-03-19
+**Current Phase**: Phase 2 complete — ready for field testing
+**Deployed**: GitHub Pages
 
 ---
 
 ## Current Focus
 
-**Task File**: `.claude/tasks/pwa-field-capture.md`
-
 ### Priority Order
 
-1. **PWA Field Capture** - Complete, pending commit
-2. **Manual testing** - Test on mobile with real data
-3. **Polish** - UX refinements based on field use
+1. **Field testing** — Use PWA on a real site visit, identify friction points
+2. **UX polish** — Refinements based on field feedback
+3. **Phase 3 planning** — Inter-visit tracking, multi-project support
 
 ---
 
@@ -22,16 +20,21 @@
 
 ### Phase 1: Report Template
 - [x] DOCX template with IC branding
-- [x] render_cr_visite.py script
-- [x] Reference JSON context
+- [x] render_cr_visite.py script (Python + python-docx + Pillow)
+- [x] Reference JSON context (17 observations example)
 
 ### Phase 2: PWA Field Capture
 - [x] Vite + Preact + Tailwind v4 scaffolding
-- [x] IndexedDB data layer (Dexie.js)
-- [x] Mobile-optimized UI components
-- [x] ZIP export matching render_cr_visite.py format
+- [x] IndexedDB data layer (Dexie.js) — offline-first
+- [x] Mobile-optimized UI: 3-tab navigation (Add / List / Export)
+- [x] Observation form: Building / Floor / Facade selectors + text + photos
+- [x] Photo capture: camera + gallery buttons with compression
+- [x] Observation list: edit, delete, photo thumbnails
+- [x] ZIP export matching render_cr_visite.py format (includes script + template + README)
 - [x] ISO date support in render script
-- [x] PWA with offline support (service worker)
+- [x] PWA with offline support (service worker via Workbox)
+- [x] Form validation
+- [x] GitHub Pages deployment workflow
 - [x] TypeScript clean, production build successful
 
 ---
@@ -63,40 +66,9 @@ npx tsc --noEmit
 # Build
 npm run build
 
-# Generate report from export
-python template/render_cr_visite.py context.json --photos-dir ./photos
-```
-
----
-
-## Key Files
-
-```
-src/
-├── main.tsx                    # Entry point
-├── app.tsx                     # Root component with view routing
-├── types.ts                    # TypeScript interfaces
-├── styles.css                  # Tailwind v4 entry
-├── db/
-│   ├── schema.ts               # Dexie database definition
-│   └── operations.ts           # CRUD helpers
-├── lib/
-│   ├── export-zip.ts           # ZIP generation
-│   └── ref-generator.ts        # V{n}-{nn} refs
-├── components/
-│   ├── visit-header.tsx        # Visit metadata form
-│   ├── observation-form.tsx    # Data entry form
-│   ├── observation-list.tsx    # Reactive list
-│   ├── observation-card.tsx    # Single observation card
-│   ├── export-view.tsx         # Recap + export
-│   └── ui/
-│       ├── select-field.tsx    # Reusable select
-│       ├── text-field.tsx      # Reusable text input
-│       └── photo-capture.tsx   # Camera + compression
-template/
-├── render_cr_visite.py         # Report generator
-├── template_cr_visite_aulnay.docx
-└── context_visite_27022026.json
+# Generate report from exported ZIP
+unzip export.zip -d export/
+python template/render_cr_visite.py export/context.json --photos-dir export/photos
 ```
 
 ---
@@ -105,12 +77,13 @@ template/
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Preact + Vite + Tailwind v4 |
-| Storage | IndexedDB (Dexie.js) |
+| Frontend | Preact 10 + Vite 7 + Tailwind v4 |
+| Storage | IndexedDB (Dexie.js 4) |
 | Export | JSZip |
 | Report | Python + python-docx + Pillow |
 | PWA | vite-plugin-pwa + Workbox |
+| Hosting | GitHub Pages |
 
 ---
 
-**Next Action**: `/commit` then test on mobile device.
+**Next Action**: Test on mobile device during next site visit.

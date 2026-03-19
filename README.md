@@ -1,60 +1,95 @@
 # IC-VisiteChantier
 
-Site visit report generator for IC Ingénieurs Conseils. Automates the creation of construction site inspection reports (CR Visite de Chantier) from field notes and photos.
+Site visit report generator for IC Ingénieurs Conseils. Two-part system: a **PWA** for field data capture on construction sites + a **Python script** for generating branded DOCX reports.
 
 ## Current Project: Résidence Savigny Impair, Aulnay-sous-Bois
 
 Balcony refurbishment monitoring (Lot 12) for SDC Le Gros Saule, contractor Bouygues Bâtiment.
 
-## What's Working (Phase 1)
+## Features
 
-Generate a branded DOCX report from a JSON context file + photos:
+### PWA Field Capture (Phase 2 — complete)
+
+Mobile-first offline PWA for on-site data entry:
+- Select Building / Floor / Facade with pre-configured options
+- Add observations with text + photos (camera or gallery)
+- Review and edit observations in a scrollable list
+- Export ZIP (JSON context + photos) ready for report generation
+- Works offline — all data stored locally in IndexedDB
+
+### DOCX Report Generator (Phase 1 — complete)
+
+Generate a branded IC Ingénieurs Conseils report from the exported ZIP:
 
 ```bash
 cd template
-python render_cr_visite.py context_visite_27022026.json --photos-dir ./photos --output cr.docx
+python render_cr_visite.py context.json --photos-dir ./photos --output cr.docx
 ```
 
-**Dependencies:** `python-docx`, `Pillow`
+**Python dependencies:** `pip install python-docx Pillow`
+
+## Getting Started
+
+### PWA Development
 
 ```bash
-pip install python-docx Pillow
+npm install
+npm run dev          # Start dev server
+npm run build        # Production build (includes type check)
+npm run typecheck    # Type check only
 ```
 
-## What's Next (Phase 2)
+Deployed on GitHub Pages. Also installable as PWA on mobile.
 
-PWA mobile app for field data capture:
-- Select Building / Floor / Facade
-- Add observation + photo
-- Export JSON + photos as ZIP
-- Feed into `render_cr_visite.py` for report generation
+### Report Generation
+
+```bash
+# From an exported ZIP
+unzip export.zip -d export/
+cd template
+python render_cr_visite.py ../export/context.json --photos-dir ../export/photos --output cr.docx
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Preact 10 + Vite 7 + Tailwind v4 |
+| Storage | IndexedDB (Dexie.js) — offline-first |
+| Export | JSZip |
+| PWA | vite-plugin-pwa + Workbox |
+| Report | Python + python-docx + Pillow |
 
 ## Project Structure
 
 ```
-├── .claude/PRD.md                               # Full product requirements
-├── template/
-│   ├── template_cr_visite_aulnay.docx           # DOCX template (IC branding)
-│   ├── render_cr_visite.py                      # Report generation script
-│   └── context_visite_27022026.json             # Example context (17 observations)
-├── CR Visite Aulnay 27022026 Bat A V3.docx      # Generated report (reference)
-└── Compte rendu Aulnay 04022026 Bat A et B V1.pdf  # Historical report
+src/
+├── main.tsx                    # Entry point
+├── app.tsx                     # Root component, 3-tab navigation
+├── types.ts                    # TypeScript interfaces
+├── styles.css                  # Tailwind v4 entry
+├── db/
+│   ├── schema.ts               # Dexie database definition
+│   └── operations.ts           # CRUD helpers
+├── lib/
+│   ├── export-zip.ts           # ZIP generation
+│   └── ref-generator.ts        # V{n}-{nn} reference codes
+├── components/
+│   ├── visit-header.tsx        # Visit metadata form
+│   ├── observation-form.tsx    # Data entry form
+│   ├── observation-list.tsx    # Reactive list
+│   ├── observation-card.tsx    # Single observation display
+│   ├── export-view.tsx         # Recap + ZIP export
+│   └── ui/                     # Reusable UI components
+template/
+├── render_cr_visite.py         # DOCX report generator
+├── template_cr_visite_aulnay.docx  # IC-branded template
+├── context_visite_27022026.json    # Example context
+└── README.md                   # Render script documentation
 ```
 
 ## Documentation
 
-- **[PRD](.claude/PRD.md)** - Full specifications and roadmap
-- **[Status](.claude/STATUS.md)** - Current sprint and priorities
-- **[Workflow Guide](docs/workflow-guide.md)** - Development methodology
-
-## Development
-
-Built with Claude Code using PRD-first methodology with [3-tier context engineering](docs/workflow-guide.md).
-
-```bash
-/core_piv_loop:prime          # Load project context
-/core_piv_loop:plan-feature   # Plan a new feature
-/core_piv_loop:execute        # Execute with task tracking
-/handoff                      # Capture session state
-/commit                       # Clean commit with context tracking
-```
+- **[PRD](.claude/PRD.md)** — Full specifications and roadmap
+- **[Status](.claude/STATUS.md)** — Current state and next actions
+- **[Workflow Guide](docs/workflow-guide.md)** — Development methodology

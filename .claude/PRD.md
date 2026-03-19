@@ -1,6 +1,6 @@
 # PRD — Outil CR Visite de Chantier IC Ingénieurs Conseils
 
-## Statut : En cours — Phase 1 livrée
+## Statut : Phase 1 et 2 livrées — prêt pour tests terrain
 
 ---
 
@@ -100,70 +100,80 @@ python render_cr_visite.py context.json --photos-dir ./photos --output cr.docx
 
 ---
 
-## 3. Phase 2 — Outil terrain (à développer)
+## 3. Ce qui a été livré (Phase 2) — PWA Outil terrain
 
-### 3.1 Problème à résoudre
+### 3.1 Problème résolu
 
-Sur le chantier, Renaud prend des notes rapides : un commentaire court + 1-2 photos par observation, avec une localisation (bâtiment, étage, façade). Ces notes sont actuellement dans Google Docs, ce qui est fonctionnel mais pas structuré — il faut ensuite tout réorganiser manuellement pour le CR.
+Sur le chantier, Renaud prenait des notes rapides sur Google Docs : un commentaire court + 1-2 photos par observation, avec une localisation (bâtiment, étage, façade). Pas structuré → réorganisation manuelle pour le CR.
 
-**Citation Renaud :** "La difficulté est plutôt de pouvoir avoir un moyen rapide d'écrire un commentaire, ajouter des photos sur un endroit précis du bâtiment (bâtiment A, 10ème étage, façade ouest) et faire en sorte que le rapport [se génère]. Car les commentaires sont courts."
+**Solution livrée :** PWA offline-first (Option B retenue) — Preact + Vite + Tailwind v4, stockage IndexedDB via Dexie.js.
 
-### 3.2 Flux cible
+### 3.2 Flux implémenté
 
 ```
-[Terrain]                    [Bureau]
-Ouvrir l'outil mobile    →   Les données arrivent structurées
+[Terrain — PWA mobile]              [Bureau]
+Ouvrir la PWA (installable)     →   Données structurées en IndexedDB
 Sélectionner Bât/Étage/Façade
-Écrire 1 ligne            →   = observation
-Prendre 1-2 photos        →   = illustration
-Taper "action" suggérée   →   = action corrective
+Écrire 1 ligne (observation)
+Prendre photo (caméra/galerie)
+Écrire action corrective
+Bouton "Ajouter"
          ↓
-   Export JSON + photos
+   Export ZIP (JSON + photos)
          ↓
    render_cr_visite.py → DOCX final
 ```
 
-### 3.3 Options d'implémentation
+### 3.3 Stack technique
 
-| Option | Avantages | Inconvénients |
-|--------|-----------|---------------|
-| **A. Google Sheet + Google Form** | Zéro dev, photos via form, export CSV facile | UX limitée, pas de sélecteur bâtiment/étage fluide |
-| **B. Web app PWA** | UX optimale, fonctionne hors-ligne, camera native | Temps de dev, hébergement |
-| **C. Google Apps Script + Sheet** | Compromis : UI custom dans Sheet, zéro hébergement | Limité en UX, dépendance Google |
+| Composant | Technologie |
+|-----------|------------|
+| Framework | Preact 10 + Signals |
+| Build | Vite 7 + TypeScript 5.9 |
+| CSS | Tailwind v4 |
+| Storage | IndexedDB (Dexie.js 4) |
+| Export | JSZip |
+| PWA | vite-plugin-pwa + Workbox |
+| Hosting | GitHub Pages |
 
-**Recommandation :** Option B (PWA) pour le meilleur rapport UX/pérennité. Peut être ultra-simple : une seule page, 3 selects (Bât/Étage/Façade) + champ texte + bouton photo + bouton "Ajouter". Export JSON en un clic.
+### 3.4 Architecture PWA
 
-### 3.4 Specs fonctionnelles de l'outil terrain
+3 onglets de navigation :
+1. **Ajouter** — VisitHeader (métadonnées visite) + ObservationForm (saisie observation)
+2. **Observations** — ObservationList avec ObservationCards (édition/suppression)
+3. **Export** — ExportView avec récap + téléchargement ZIP
 
-**Écran principal :**
-- Sélecteur : Bâtiment (A, B, C...) / Étage (RDC à 10ème) / Façade (Nord, Sud, Est, Ouest)
-- Champ texte : observation (1-2 lignes max)
-- Champ texte : action corrective (optionnel, suggestions auto)
-- Bouton photo : accès caméra, 1-2 photos max
-- Bouton "Ajouter" : ajoute l'observation à la liste
-- Liste scrollable des observations déjà saisies (éditable, supprimable)
+Composants réutilisables : SelectField, TextField, PhotoCapture (caméra + galerie + compression).
 
-**Écran récap / export :**
-- Vue tableau de toutes les observations
-- Pré-remplissage : date, participants (configurables)
-- Bouton "Exporter JSON + photos" → zip téléchargeable
-- (Optionnel) Bouton "Générer CR" si le rendu est intégré côté serveur
+### 3.5 Données par observation (IndexedDB)
 
-**Données par observation :**
 ```json
 {
-    "ref": "auto-incrémenté (V{n_visite}-{nn})",
+    "id": 1,
+    "visiteId": 1,
     "batiment": "A",
-    "etage": "10",
+    "cage": null,
+    "etage": "10ème",
     "facade": "Ouest",
     "observation": "Cale à reprendre",
     "action": "Recaler correctement",
-    "photos": ["IMG_001.jpg", "IMG_002.jpg"],
-    "timestamp": "2026-02-27T14:32:00"
+    "photoIds": [1, 2],
+    "createdAt": "2026-02-27T14:32:00.000Z"
 }
 ```
 
-### 3.5 Intégration avec le skill Claude
+Photos stockées séparément comme Blobs dans IndexedDB, liées par `photoIds`.
+
+### 3.6 Format d'export ZIP
+
+Le ZIP contient :
+- `context.json` — format compatible `render_cr_visite.py` (voir section 2.4)
+- `photos/` — photos JPEG compressées
+- `render_cr_visite.py` — copie du script de rendu
+- `template_cr_visite_aulnay.docx` — copie du template
+- `README.md` — instructions d'utilisation
+
+### 3.7 Intégration avec le skill Claude
 
 Le skill `document-generator` (ou un nouveau skill dédié) pourrait :
 1. Recevoir le JSON exporté par l'outil terrain
@@ -176,8 +186,13 @@ Commande type dans Claude :
 
 ---
 
-## 4. Phase 3 — Évolutions futures
+## 4. Phase 3 — Prochaines étapes et évolutions futures
 
+### Priorité immédiate
+- **Tests terrain** — utiliser la PWA sur un vrai chantier, identifier les friction points
+- **Polish UX** — ajustements basés sur le retour terrain
+
+### Évolutions futures
 - **Suivi inter-visites :** comparer les observations entre V1 et V2 (résolu/persistant/nouveau)
 - **Dashboard :** vue synthétique de toutes les observations par bâtiment/étage
 - **Export PDF :** conversion automatique DOCX → PDF
@@ -190,24 +205,34 @@ Commande type dans Claude :
 
 | Composant | Technologie |
 |-----------|-------------|
+| PWA (outil terrain) | Preact 10 + Vite 7 + Tailwind v4 + TypeScript 5.9 |
+| Stockage offline | IndexedDB (Dexie.js 4) |
+| Export terrain | JSZip |
+| PWA / Service Worker | vite-plugin-pwa + Workbox |
 | Template DOCX | `python-docx` + template maison (pas docxtpl, trop limité pour les tableaux dynamiques) |
 | Rendu CR | `render_cr_visite.py` (Python, ~200 lignes) |
-| Photos | `Pillow` pour redimensionnement, extraction PDF via `PyMuPDF` |
-| Outil terrain (Phase 2) | PWA (HTML/JS) ou Google Sheet + Apps Script |
-| Stockage | Synology Drive, vault Obsidian pour le suivi projet |
+| Photos | `Pillow` pour redimensionnement |
+| Hébergement | GitHub Pages |
 
 ---
 
 ## 6. Arborescence projet
 
 ```
-bluegreen/Projets/ICIngenieursConseils/Aulnay/
+IC-VisiteChantier/
+├── src/                                # PWA Preact
+│   ├── main.tsx                        # Entry point
+│   ├── app.tsx                         # Root component, 3-tab navigation
+│   ├── types.ts                        # Interfaces TypeScript
+│   ├── db/                             # IndexedDB (Dexie)
+│   ├── lib/                            # Export ZIP, ref generator
+│   └── components/                     # UI components
 ├── template/
-│   ├── template_cr_visite_aulnay.docx    # Template réutilisable
-│   ├── render_cr_visite.py               # Script de rendu
-│   └── context_visite_27022026.json      # Exemple de contexte
-├── CR Visite Aulnay 27022026 Bat A V2.docx   # Version Renaud (référence)
-├── CR Visite Aulnay 27022026 Bat A V3.docx   # Version template (finale)
-├── CR Visite Aulnay 04022026 Bat A et B V1.pdf  # CR Laurent (historique)
-└── PRD.md                                 # Ce document
+│   ├── template_cr_visite_aulnay.docx  # Template réutilisable
+│   ├── render_cr_visite.py             # Script de rendu
+│   └── context_visite_27022026.json    # Exemple de contexte
+├── package.json                        # Dependencies + scripts
+├── vite.config.ts                      # Vite + PWA config
+├── CR Visite Aulnay 27022026 Bat A V3.docx   # Version générée (référence)
+└── Compte rendu Aulnay 04022026 Bat A et B V1.pdf  # CR historique
 ```

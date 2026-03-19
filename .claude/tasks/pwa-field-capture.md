@@ -48,4 +48,4 @@ Offline-first PWA for construction site field data capture — observations with
 ## Completion
 - **Started**: 2026-03-18
 - **Completed**: 2026-03-18
-- **Commit**: (pending)
+- **Commits**: 9232209 → 1a42609 (5 commits on main)
