@@ -16,9 +16,11 @@ export function ExportView({ visiteId }: ExportViewProps) {
   const synthese = useSignal('');
   const conclusion = useSignal('');
   const exporting = useSignal(false);
-  const sharing = useSignal(false);
+  const preparing = useSignal(false);
   const error = useSignal('');
   const loaded = useSignal(false);
+  const readyBlob = useSignal<Blob | null>(null);
+  const readyFilename = useSignal('');
 
   const observations = useLiveQuery(
     () => db.observations.where('visiteId').equals(visiteId).sortBy('createdAt'),
@@ -51,6 +53,40 @@ export function ExportView({ visiteId }: ExportViewProps) {
     return { blob, filename: `visite-${datePart}-${batPart}.zip` };
   }
 
+  async function handlePrepare() {
+    preparing.value = true;
+    error.value = '';
+    readyBlob.value = null;
+    try {
+      const { blob, filename } = await buildZip();
+      readyBlob.value = blob;
+      readyFilename.value = filename;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Erreur lors de la préparation';
+    } finally {
+      preparing.value = false;
+    }
+  }
+
+  async function handleShare() {
+    if (!readyBlob.value) return;
+    error.value = '';
+    try {
+      const shared = await shareFile(readyBlob.value, readyFilename.value);
+      if (!shared) {
+        triggerDownload(readyBlob.value, readyFilename.value);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      error.value = err instanceof Error ? err.message : 'Erreur lors du partage';
+    }
+  }
+
+  function handleDownload() {
+    if (!readyBlob.value) return;
+    triggerDownload(readyBlob.value, readyFilename.value);
+  }
+
   async function handleExport() {
     exporting.value = true;
     error.value = '';
@@ -61,23 +97,6 @@ export function ExportView({ visiteId }: ExportViewProps) {
       error.value = err instanceof Error ? err.message : 'Erreur lors de l\'export';
     } finally {
       exporting.value = false;
-    }
-  }
-
-  async function handleShare() {
-    sharing.value = true;
-    error.value = '';
-    try {
-      const { blob, filename } = await buildZip();
-      const shared = await shareFile(blob, filename);
-      if (!shared) {
-        triggerDownload(blob, filename);
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      error.value = err instanceof Error ? err.message : 'Erreur lors du partage';
-    } finally {
-      sharing.value = false;
     }
   }
 
@@ -163,22 +182,30 @@ export function ExportView({ visiteId }: ExportViewProps) {
         <p class="text-red-600 text-sm font-medium text-center">{error.value}</p>
       )}
 
-      <div class="space-y-2">
+      {!readyBlob.value ? (
         <button
-          onClick={handleShare}
-          disabled={sharing.value || exporting.value || observations.length === 0}
+          onClick={handlePrepare}
+          disabled={preparing.value || observations.length === 0}
           class="w-full min-h-[52px] bg-green-600 text-white font-semibold rounded-xl px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100 text-lg"
         >
-          {sharing.value ? 'Préparation...' : `Partager ZIP (${observations.length} obs.)`}
+          {preparing.value ? 'Préparation du ZIP...' : `Préparer le ZIP (${observations.length} obs.)`}
         </button>
-        <button
-          onClick={handleExport}
-          disabled={exporting.value || sharing.value || observations.length === 0}
-          class="w-full min-h-[44px] bg-gray-100 text-gray-700 font-medium rounded-xl px-4 py-2.5 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100 text-sm"
-        >
-          {exporting.value ? 'Téléchargement...' : 'Télécharger ZIP'}
-        </button>
-      </div>
+      ) : (
+        <div class="space-y-2">
+          <button
+            onClick={handleShare}
+            class="w-full min-h-[52px] bg-green-600 text-white font-semibold rounded-xl px-4 py-3 active:scale-95 touch-manipulation text-lg"
+          >
+            Partager ZIP
+          </button>
+          <button
+            onClick={handleDownload}
+            class="w-full min-h-[44px] bg-gray-100 text-gray-700 font-medium rounded-xl px-4 py-2.5 active:scale-95 touch-manipulation text-sm"
+          >
+            Télécharger ZIP
+          </button>
+        </div>
+      )}
     </div>
   );
 }
