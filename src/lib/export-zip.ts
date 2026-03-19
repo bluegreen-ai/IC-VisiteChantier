@@ -2,6 +2,15 @@ import JSZip from 'jszip';
 import { db } from '../db/schema';
 import type { ExportContext, ExportObservation } from '../types';
 import { generateRef } from './ref-generator';
+import renderScript from '../../template/render_cr_visite.py?raw';
+import readmeContent from '../../template/README.md?raw';
+import templateDocxUrl from '../../template/template_cr_visite_aulnay.docx?url';
+
+async function fetchTemplateDocx(): Promise<Blob> {
+  const response = await fetch(templateDocxUrl);
+  if (!response.ok) throw new Error('Failed to fetch DOCX template');
+  return response.blob();
+}
 
 export async function exportVisiteZip(visiteId: number): Promise<Blob> {
   const visite = await db.visites.get(visiteId);
@@ -54,6 +63,16 @@ export async function exportVisiteZip(visiteId: number): Promise<Blob> {
   };
 
   zip.file('context.json', JSON.stringify(context, null, 2), { compression: 'DEFLATE' });
+  zip.file('README.md', readmeContent, { compression: 'DEFLATE' });
+  zip.file('render_cr_visite.py', renderScript, { compression: 'DEFLATE' });
+
+  try {
+    const templateBlob = await fetchTemplateDocx();
+    zip.file('template_cr_visite_aulnay.docx', templateBlob, { compression: 'STORE' });
+  } catch {
+    // Template fetch may fail offline — ZIP is still usable without it
+    console.warn('Could not bundle DOCX template — fetch failed (offline?)');
+  }
 
   return zip.generateAsync({ type: 'blob' });
 }
