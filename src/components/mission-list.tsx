@@ -65,7 +65,7 @@ export function MissionList({ onSelectMission, onCreateMission }: MissionListPro
       {missions.length > 0 && (
         <button
           onClick={onCreateMission}
-          class="fixed bottom-20 right-4 w-14 h-14 bg-betc-teal text-white text-2xl rounded-full shadow-lg flex items-center justify-center active:scale-95 touch-manipulation z-10"
+          class="fixed bottom-6 right-4 w-14 h-14 bg-betc-teal text-white text-2xl rounded-full shadow-lg flex items-center justify-center active:scale-95 touch-manipulation z-10"
           aria-label="Nouvelle mission"
         >
           +

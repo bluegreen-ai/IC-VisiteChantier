@@ -21,7 +21,7 @@ export function ObservationList({ missionId, missionType, onEdit }: ObservationL
   if (observations.length === 0) {
     return (
       <div class="text-center text-gray-400 py-8">
-        Aucune observation. Appuyez sur ＋ pour en ajouter.
+        Aucune observation. Appuyez sur le bouton ＋ pour commencer.
       </div>
     );
   }

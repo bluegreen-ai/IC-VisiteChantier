@@ -132,19 +132,6 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
 
   return (
     <form onSubmit={handleSubmit} class="space-y-3 bg-white p-4 rounded-xl shadow-sm" key={formKey.value}>
-      {isEditing && (
-        <div class="flex items-center justify-between bg-betc-teal-light px-3 py-2 rounded-lg -mt-1 mb-1">
-          <span class="text-sm font-medium text-betc-teal">Modification en cours</span>
-          <button
-            type="button"
-            onClick={() => { resetForm(); onDone(); }}
-            class="text-sm text-gray-500 underline touch-manipulation"
-          >
-            Annuler
-          </button>
-        </div>
-      )}
-
       <TextField
         label="Élément observé"
         value={element.value}

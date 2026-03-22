@@ -14,12 +14,13 @@ import { ChatView } from './components/chat-view';
 import type { Mission, Building, Observation } from './types';
 
 type View = 'missions' | 'create' | 'detail';
-type DetailTab = 'chat' | 'add' | 'list' | 'export';
+type DetailTab = 'observations' | 'chat' | 'export';
 
 const currentView = signal<View>('missions');
 const activeMissionId = signal<number | null>(null);
-const activeTab = signal<DetailTab>('add');
+const activeTab = signal<DetailTab>('observations');
 const editingObs = signal<Observation | null>(null);
+const showObservationForm = signal(false);
 
 function MissionDetail({ missionId }: { missionId: number }) {
   const mission = useLiveQuery(
@@ -46,43 +47,27 @@ function MissionDetail({ missionId }: { missionId: number }) {
 
   function handleEdit(obs: Observation) {
     editingObs.value = obs;
-    activeTab.value = 'add';
-  }
-
-  function handleFormDone() {
-    editingObs.value = null;
+    showObservationForm.value = true;
   }
 
   return (
     <>
       <main class="flex-1 overflow-y-auto overscroll-contain min-h-0">
-        {activeTab.value === 'chat' && <ChatView />}
-        {activeTab.value === 'add' && (
+        {activeTab.value === 'observations' && (
           <div class="px-4 py-3 space-y-3">
             <MissionHeader
               mission={mission ?? null}
               building={building as Building | undefined}
               onSave={handleMissionSave}
             />
-            <ObservationForm
+            <ObservationList
               missionId={missionId}
-              observationCount={obsCount ?? 0}
-              editingObservation={editingObs.value}
-              onDone={handleFormDone}
+              missionType={mission?.type ?? 'autre'}
+              onEdit={handleEdit}
             />
           </div>
         )}
-        {activeTab.value === 'list' && (
-          <div class="px-4 py-3 space-y-3">
-            {mission && (
-              <ObservationList
-                missionId={missionId}
-                missionType={mission.type}
-                onEdit={handleEdit}
-              />
-            )}
-          </div>
-        )}
+        {activeTab.value === 'chat' && <ChatView />}
         {activeTab.value === 'export' && (
           <div class="px-4 py-3 space-y-3">
             <ExportView missionId={missionId} />
@@ -90,8 +75,53 @@ function MissionDetail({ missionId }: { missionId: number }) {
         )}
       </main>
 
-      {/* Bottom tab bar */}
+      {/* FAB — only on observations tab */}
+      {activeTab.value === 'observations' && (
+        <button
+          onClick={() => { editingObs.value = null; showObservationForm.value = true; }}
+          class="fixed bottom-20 right-4 z-30 w-14 h-14 bg-betc-teal text-white rounded-full shadow-lg flex items-center justify-center text-2xl touch-manipulation active:scale-95 transition-transform"
+          aria-label="Add observation"
+        >
+          ＋
+        </button>
+      )}
+
+      {/* Observation form overlay */}
+      {showObservationForm.value && (
+        <div class="fixed inset-0 z-40 bg-white flex flex-col">
+          <header class="bg-betc-teal text-white px-4 py-3 pt-safe flex-shrink-0 flex items-center gap-2">
+            <button
+              onClick={() => { showObservationForm.value = false; editingObs.value = null; }}
+              class="text-white/80 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2"
+            >
+              ←
+            </button>
+            <h2 class="text-lg font-bold">
+              {editingObs.value ? 'Modifier observation' : 'Nouvelle observation'}
+            </h2>
+          </header>
+          <main class="flex-1 overflow-y-auto overscroll-contain min-h-0 px-4 py-3">
+            <ObservationForm
+              missionId={missionId}
+              observationCount={obsCount ?? 0}
+              editingObservation={editingObs.value}
+              onDone={() => { showObservationForm.value = false; editingObs.value = null; }}
+            />
+          </main>
+        </div>
+      )}
+
+      {/* Bottom tab bar — 3 tabs */}
       <nav class="bg-white border-t border-gray-200 flex pb-safe flex-shrink-0">
+        <button
+          onClick={() => (activeTab.value = 'observations')}
+          class={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-0.5 touch-manipulation ${
+            activeTab.value === 'observations' ? 'text-betc-teal font-semibold' : 'text-gray-400'
+          }`}
+        >
+          <span class="text-lg">📋</span>
+          <span class="text-xs">Observations</span>
+        </button>
         <button
           onClick={() => (activeTab.value = 'chat')}
           class={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-0.5 touch-manipulation ${
@@ -100,29 +130,6 @@ function MissionDetail({ missionId }: { missionId: number }) {
         >
           <span class="text-lg">💬</span>
           <span class="text-xs">Chat</span>
-        </button>
-        <button
-          onClick={() => { editingObs.value = null; activeTab.value = 'add'; }}
-          class={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-0.5 touch-manipulation ${
-            activeTab.value === 'add' ? 'text-betc-teal font-semibold' : 'text-gray-400'
-          }`}
-        >
-          <span class="text-xl">＋</span>
-          <span class="text-xs">Ajouter</span>
-        </button>
-        <button
-          onClick={() => (activeTab.value = 'list')}
-          class={`flex-1 min-h-[52px] flex flex-col items-center justify-center gap-0.5 touch-manipulation relative ${
-            activeTab.value === 'list' ? 'text-betc-teal font-semibold' : 'text-gray-400'
-          }`}
-        >
-          <span class="text-lg">📋</span>
-          <span class="text-xs">Observations</span>
-          {(obsCount ?? 0) > 0 && (
-            <span class="absolute top-1.5 right-1/4 bg-betc-teal text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center">
-              {obsCount}
-            </span>
-          )}
         </button>
         <button
           onClick={() => (activeTab.value = 'export')}
@@ -141,7 +148,7 @@ function MissionDetail({ missionId }: { missionId: number }) {
 function AuthenticatedApp() {
   function handleSelectMission(id: number) {
     activeMissionId.value = id;
-    activeTab.value = 'add';
+    activeTab.value = 'observations';
     currentView.value = 'detail';
   }
 
@@ -151,13 +158,14 @@ function AuthenticatedApp() {
 
   function handleMissionCreated(id: number) {
     activeMissionId.value = id;
-    activeTab.value = 'add';
+    activeTab.value = 'observations';
     currentView.value = 'detail';
   }
 
   function handleBack() {
     activeMissionId.value = null;
     editingObs.value = null;
+    showObservationForm.value = false;
     currentView.value = 'missions';
   }
 
@@ -174,7 +182,9 @@ function AuthenticatedApp() {
               ←
             </button>
           )}
-          <h1 class="text-lg font-bold">BETClaw</h1>
+          <h1 class="text-lg font-bold">
+            {currentView.value !== 'missions' ? 'Missions' : 'BETClaw'}
+          </h1>
         </div>
         <button
           onClick={() => signOut()}
