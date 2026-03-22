@@ -20,6 +20,11 @@ Thumbs.db
 *.swo
 *~
 
+# Environment variables (secrets!)
+.env
+.env.*
+!.env.example
+
 # Node
 node_modules/
 

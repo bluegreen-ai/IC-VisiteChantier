@@ -1,32 +1,39 @@
-# IC-VisiteChantier
+# BETClaw
 
-Site visit report generator for IC Ingénieurs Conseils. Two-part system: a **PWA** for field data capture on construction sites + a **Python script** for generating branded DOCX reports.
+Generic field capture tool for BET engineering firms. AI-powered chat adapts to each mission type — no rigid forms.
 
-## Current Project: Résidence Savigny Impair, Aulnay-sous-Bois
+**Built on:** IC-VisiteChantier codebase (evolved in-place)
 
-Balcony refurbishment monitoring (Lot 12) for SDC Le Gros Saule, contractor Bouygues Bâtiment.
+## How It Works
+
+1. **Create a mission** with a brief describing what you need to inspect
+2. **OpenClaw AI** generates a contextual checklist and guides you through the visit via chat
+3. **Capture observations** — text + photos, all structured automatically
+4. **Export & report** — ZIP export + DOCX generation via `document-generator` skill
 
 ## Features
 
-### PWA Field Capture (Phase 2 — complete)
+### PWA Field Capture
+- Chat-based data entry — AI adapts to your mission type
+- Photo capture (camera/gallery) with compression
+- Offline-first — works without network, syncs on reconnect
+- Mission management with building registry
 
-Mobile-first offline PWA for on-site data entry:
-- Select Building / Floor / Facade with pre-configured options
-- Add observations with text + photos (camera or gallery)
-- Review and edit observations in a scrollable list
-- Export ZIP (JSON context + photos) ready for report generation
-- Works offline — all data stored locally in IndexedDB
+### Backend (Supabase)
+- Auth via magic link (no passwords)
+- Postgres with RLS — buildings, missions, messages, photos, reports
+- Storage for photos and generated reports
+- Offline sync queue
 
-### DOCX Report Generator (Phase 1 — complete)
+### AI Assistant (OpenClaw)
+- Contextual checklist generation from mission brief
+- Field guidance during the visit
+- Structured data extraction from chat
 
-Generate a branded IC Ingénieurs Conseils report from the exported ZIP:
-
-```bash
-cd template
-python render_cr_visite.py context.json --photos-dir ./photos --output cr.docx
-```
-
-**Python dependencies:** `pip install python-docx Pillow`
+### Report Generation
+- DOCX reports via `document-generator` Claude Code skill
+- Uses existing `render_cr_visite.py` + IC-branded template
+- ZIP export as backup (JSON context + photos)
 
 ## Getting Started
 
@@ -35,11 +42,16 @@ python render_cr_visite.py context.json --photos-dir ./photos --output cr.docx
 ```bash
 npm install
 npm run dev          # Start dev server
-npm run build        # Production build (includes type check)
+npm run build        # Production build
 npm run typecheck    # Type check only
 ```
 
-Deployed on GitHub Pages. Also installable as PWA on mobile.
+### Environment Variables
+
+```bash
+cp .env.example .env.local
+# Fill in: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_OPENCLAW_URL, VITE_OPENCLAW_API_KEY
+```
 
 ### Report Generation
 
@@ -50,46 +62,50 @@ cd template
 python render_cr_visite.py ../export/context.json --photos-dir ../export/photos --output cr.docx
 ```
 
+Or use the `document-generator` skill in Claude Code.
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Preact 10 + Vite 7 + Tailwind v4 |
 | Storage | IndexedDB (Dexie.js) — offline-first |
+| Backend | Supabase (Auth + Postgres + Storage) |
+| AI Chat | OpenClaw API |
 | Export | JSZip |
 | PWA | vite-plugin-pwa + Workbox |
-| Report | Python + python-docx + Pillow |
+| Report | Python + python-docx + Pillow (via `document-generator` skill) |
 
 ## Project Structure
 
 ```
 src/
 ├── main.tsx                    # Entry point
-├── app.tsx                     # Root component, 3-tab navigation
+├── app.tsx                     # Root component
 ├── types.ts                    # TypeScript interfaces
 ├── styles.css                  # Tailwind v4 entry
 ├── db/
 │   ├── schema.ts               # Dexie database definition
 │   └── operations.ts           # CRUD helpers
 ├── lib/
+│   ├── supabase.ts             # Supabase client
 │   ├── export-zip.ts           # ZIP generation
-│   └── ref-generator.ts        # V{n}-{nn} reference codes
+│   └── ref-generator.ts        # Reference codes
 ├── components/
-│   ├── visit-header.tsx        # Visit metadata form
-│   ├── observation-form.tsx    # Data entry form
-│   ├── observation-list.tsx    # Reactive list
-│   ├── observation-card.tsx    # Single observation display
-│   ├── export-view.tsx         # Recap + ZIP export
+│   ├── mission-list.tsx        # Mission cards
+│   ├── mission-create.tsx      # New mission form
+│   ├── chat-window.tsx         # Chat messages
+│   ├── chat-input.tsx          # Message input + photo
+│   ├── photo-gallery.tsx       # Swipable gallery
+│   ├── export-view.tsx         # ZIP export
 │   └── ui/                     # Reusable UI components
 template/
 ├── render_cr_visite.py         # DOCX report generator
 ├── template_cr_visite_aulnay.docx  # IC-branded template
-├── context_visite_27022026.json    # Example context
-└── README.md                   # Render script documentation
+└── context_visite_27022026.json    # Example context
 ```
 
 ## Documentation
 
 - **[PRD](.claude/PRD.md)** — Full specifications and roadmap
 - **[Status](.claude/STATUS.md)** — Current state and next actions
-- **[Workflow Guide](docs/workflow-guide.md)** — Development methodology
