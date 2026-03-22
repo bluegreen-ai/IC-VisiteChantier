@@ -1,7 +1,7 @@
 # BETClaw - Current Status
 
 **Last Updated**: 2026-03-22
-**Current Phase**: Supabase sync — enabling agent access to field data
+**Current Phase**: Agent auth + Supabase sync — enabling agent access to field data
 **Deadline**: Field test Longjumeau, Monday 2026-03-23
 
 ---
@@ -15,6 +15,14 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 - Report generation from Supabase data post-mission (via Claude Code/Cowork)
 - Export/ZIP can be done post-field from desktop
 
+### Agent auth: JWT passthrough via silent message (MVP)
+
+**Decision (2026-03-22):** The agent must query Supabase as the user (RLS-scoped), not with a service_role key.
+
+- **MVP approach:** PWA sends the user's Supabase JWT as a silent message `[system:supabase_auth:<JWT>]` right after WebSocket connect. The agent extracts the token and uses it for all Supabase queries. Token expires in 1h, acceptable risk for mono-user MVP.
+- **Target approach (Passe 11):** Supabase Edge Function proxy — JWT validated server-side, passed to agent via `extraSystemPrompt` (native OpenClaw mechanism). See PRD § Passe 11.
+- **Reference doc:** `betclaw-skill-supabase-reader.md` — full schema, queries, auth patterns.
+
 ### MVP weekend 22-23 mars — reprioritized
 
 | Passe | Scope | Priority | Status |
@@ -22,22 +30,31 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 | 1 | Supabase setup (6 tables + auth + storage + RLS) + rebranding | — | **Done** ✓ |
 | 2 | Auth email/password + Chat OpenClaw | — | **Done** ✓ |
 | 3 | Capture observations (photos + text + tags) | — | **Done** ✓ |
-| 4 | **Supabase sync (upsert on save + photo upload)** | **P0** | **In progress** |
-| 4b | Agent skill: supabase-reader on OpenClaw VPS | P1 | Not started |
+| 4 | Supabase sync (upsert on save + photo upload + offline queue) | — | **Done** ✓ |
+| 4b | Agent skill: supabase-reader on OpenClaw VPS | **P0** | **In progress** |
 | 7 | UX polish + mobile deploy + test | P1 | Not started |
 | 8 | Full Longjumeau flow test (PWA + agent) | **P0** | Not started |
 | 5 | Photo gallery (fullscreen swipe) | P2 | Deferred |
 | 6 | ZIP export (context.json + photos) | P2 | Deferred post-field |
 
-**Rationale:**
-- Passe 4 (sync) is the bridge between PWA and agent — without it, agent is blind
-- Passe 5 (gallery) and 6 (export) are not needed on the field Monday — export happens at the office
-- Passe 4b (agent skill) can be configured on the VPS separately
+### Post-MVP
+
+| Passe | Scope | Priority | Status |
+|-------|-------|----------|--------|
+| 10 | Agent BETClaw complet (SOUL.md, skills, report-generator) | P1 | Not started |
+| 11 | **Auth propre: Edge Function proxy + extraSystemPrompt** | P1 | Not started |
+
+**Rationale Passe 11:**
+- OpenClaw `connect` and `chat.send` have `additionalProperties: false` — no custom context fields
+- MVP workaround (JWT in message) puts the token in the LLM context — acceptable for mono-user, not for multi-tenant
+- `extraSystemPrompt` in OpenClaw's `agent` method is the proper channel — available via HTTP hooks or Edge Function proxy
+- Industry standard: JWT at HTTP layer, never in chat protocol (Vercel AI SDK, LangServe, CopilotKit all do this)
 
 ---
 
 ## Key References
 
+- **Skill doc**: `betclaw-skill-supabase-reader.md` — schema, queries, auth, examples
 - **PinchChat** (webchat OpenClaw): https://github.com/MarlBurroW/pinchchat
 - **OpenClaw brief**: `brief-openclaw-betclaw.md`
 
@@ -63,27 +80,25 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 ## Architecture (current understanding)
 
 ```
-PWA (terrain)                    Supabase                 OpenClaw Gateway
-┌──────────────────┐       ┌──────────────────┐     ┌──────────────────┐
-│ Capture          │       │ Auth             │     │ Agent "betclaw"  │
-│  observations    │──sync─▶ betc_missions    │     │                  │
-│  photos          │──────▶│ betc_observations│◀────│ skill:           │
-│                  │       │ betc_photos      │ SQL │  supabase-reader │
-│ IndexedDB/Dexie  │       │ Storage (photos) │     │                  │
-│ (offline buffer) │       │                  │     │ SOUL.md (BET)    │
-│                  │       │                  │     │                  │
-│ Chat ◀──────────────WebSocket──────────────────▶ │ Chat responses   │
-└──────────────────┘       └──────────────────┘     └──────────────────┘
+MVP (tonight):
+PWA ──WebSocket──▶ OpenClaw Gateway ──▶ Agent betclaw
+  │                                        │
+  │ silent msg: [system:supabase_auth:JWT]  │ uses JWT to query Supabase
+  │                                        │
+  └──sync──▶ Supabase ◀───────────────────┘
+                                    (RLS enforced)
 
-Data flow:
-1. User captures observation → IndexedDB (instant) → Supabase (when online)
-2. User asks agent a question → agent queries Supabase → responds with context
-3. Post-mission: agent has full data for report generation
+Target (Passe 11):
+PWA ──fetch──▶ Supabase Edge Function ──▶ OpenClaw (agent method)
+  │              validates JWT              │ extraSystemPrompt: JWT
+  │              server-side                │
+  └──sync──▶ Supabase ◀───────────────────┘
+                                    (RLS enforced)
 ```
 
-**Why NOT CopilotKit:** CopilotKit exposes frontend React state to AI. Our architecture is better — Supabase is the shared data layer. Agent reads DB directly via SQL, not screen state. Works regardless of which page the user is on.
+**Why NOT service_role key:** Real 2025 incident — LLM agent with service_role key got tricked via prompt injection into exfiltrating secrets (Pomerium post-mortem). OWASP LLM Top 10 (LLM08 — Excessive Agency) explicitly warns against this.
 
 ---
 
-**Current Task File**: `.claude/tasks/passe4-supabase-sync.md` (to create)
-**Next Action**: Implement Supabase sync — upsert on every create/update + photo upload to Storage
+**Current Task File**: `.claude/tasks/passe4-supabase-sync.md`
+**Next Action**: Configure agent betclaw on VPS with supabase-reader skill + test full Longjumeau flow

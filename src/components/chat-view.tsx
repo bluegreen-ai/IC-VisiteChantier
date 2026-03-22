@@ -1,6 +1,7 @@
 import { useSignal } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
 import { OpenClawClient, type ChatMessage } from '../lib/openclaw-client'
+import { session } from '../lib/auth'
 
 // Build WebSocket URL from base URL (https → wss)
 const baseUrl = import.meta.env.VITE_OPENCLAW_URL as string | undefined
@@ -33,6 +34,8 @@ export function ChatView() {
     }
 
     const client = new OpenClawClient(wsUrl, wsToken, sessionKey)
+    // Pass Supabase JWT so the agent queries data scoped to this user via RLS
+    client.setSupabaseToken(session.value?.access_token ?? null)
     clientRef.current = client
 
     const unsub = client.onEvent((event, payload) => {

@@ -564,6 +564,53 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 - [ ] Skill `report-generator` : générer un DOCX avec template IC
 - [ ] Ajouter l'agent dans `openclaw.json` + binding webchat
 
+### Passe 11 — Auth agent propre : Edge Function proxy (post-MVP, P1)
+
+**Problème actuel (MVP) :** Le protocole OpenClaw (`connect` et `chat.send`) a `additionalProperties: false` — impossible de passer des champs custom. Pour le MVP, le JWT Supabase de l'utilisateur est envoyé comme message silencieux `[system:supabase_auth:<JWT>]` après connexion WebSocket. Ça marche mais le token atterrit dans le contexte LLM.
+
+**Solution propre : Supabase Edge Function comme proxy**
+
+C'est le pattern standard de l'industrie (Vercel AI SDK, LangServe, CopilotKit) : l'auth se gère à la couche HTTP, jamais dans le protocole chat.
+
+```
+PWA (utilisateur authentifié)
+  │
+  │  fetch() avec Authorization: Bearer <supabase_jwt>
+  │
+  ▼
+Supabase Edge Function
+  │  Valide le JWT côté serveur
+  │  Appelle OpenClaw via HTTP hooks ou méthode `agent`
+  │  avec extraSystemPrompt contenant le token
+  │
+  ▼
+OpenClaw Gateway → agent betclaw
+  │  JWT dans le system prompt (pas dans la conversation)
+  │  Skill l'extrait → client Supabase scoped par RLS
+  │
+  ▼
+Supabase (RLS enforced — agent ne voit que les données de l'utilisateur)
+```
+
+**Découverte clé :** OpenClaw supporte `extraSystemPrompt` dans la méthode `agent` — une string injectée dans le system prompt sous `## Group Chat Context`. C'est le canal officiel pour le contexte applicatif.
+
+**Tâches :**
+
+- [ ] Créer une Edge Function `betclaw-proxy` qui :
+  - Valide le JWT Supabase entrant (Authorization header)
+  - Ouvre une connexion WebSocket vers OpenClaw gateway
+  - Appelle la méthode `agent` avec `extraSystemPrompt` contenant le JWT
+  - Streame les réponses en SSE vers la PWA
+- [ ] Modifier la PWA : remplacer la connexion WebSocket directe par des appels fetch vers l'Edge Function
+- [ ] Supprimer le message silencieux `[system:supabase_auth:...]`
+- [ ] Mettre à jour le skill `supabase-reader` pour extraire le JWT depuis `extraSystemPrompt`
+
+**Avantages :**
+- Le JWT ne transite jamais dans le protocole chat ni le contexte LLM conversationnel
+- Le JWT est validé server-side avant d'atteindre l'agent
+- Sécurité multi-tenant : même sous prompt injection, impossible d'accéder aux données d'un autre utilisateur
+- Utilise `extraSystemPrompt` — mécanisme natif OpenClaw, pas un hack
+
 ---
 
 ## 9. Flux produit final (post-MVP)

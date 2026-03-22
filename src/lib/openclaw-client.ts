@@ -16,12 +16,22 @@ export class OpenClawClient {
   private reconnectAttempts = 0
   private _connected = false
   private idCounter = 0
+  private supabaseAccessToken: string | null = null
 
   constructor(
     private wsUrl: string,
     private authToken: string,
     private sessionKey: string = 'agent:main:main',
   ) {}
+
+  /**
+   * Set the Supabase access token for RLS-scoped queries.
+   * Sent as a silent system message after WebSocket connect.
+   * MVP approach — to be replaced by Edge Function proxy (see PRD Passe 11).
+   */
+  setSupabaseToken(token: string | null) {
+    this.supabaseAccessToken = token
+  }
 
   connect() {
     if (this.ws) return
@@ -93,6 +103,12 @@ export class OpenClawClient {
       })
       console.log('[OpenClaw] Connected!')
       this._connected = true
+
+      // Send Supabase JWT as a silent system message so the agent can query as this user
+      if (this.supabaseAccessToken) {
+        await this.sendMessage(`[system:supabase_auth:${this.supabaseAccessToken}]`)
+      }
+
       this.eventHandlers.forEach((h) => h('_connected', {}))
     } catch (err) {
       console.error('[OpenClaw] Connect failed:', err)
