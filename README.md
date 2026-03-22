@@ -49,7 +49,7 @@ npm run typecheck    # Type check only
 ### Environment Variables
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 # Fill in: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_OPENCLAW_URL, VITE_OPENCLAW_API_KEY
 ```
 

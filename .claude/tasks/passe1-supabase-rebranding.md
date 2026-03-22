@@ -17,7 +17,7 @@ Set up the Supabase backend (6 betc_* tables, auth, storage) and rebrand the PWA
 ### Phase 2: Client-Side Supabase Integration
 - [x] Task 4: INSTALL @supabase/supabase-js ✓ 2026-03-21
 - [x] Task 5: CREATE src/lib/supabase.ts (client singleton) ✓ 2026-03-21
-- [x] Task 6: UPDATE .env.local + .env.example with credentials ✓ 2026-03-21
+- [x] Task 6: UPDATE .env + .env.example with credentials ✓ 2026-03-21
 - [x] Task 7: GENERATE TypeScript types from Supabase ✓ 2026-03-21
 - [x] Task 8: UPDATE src/lib/supabase.ts with generated types ✓ 2026-03-21
 
@@ -29,7 +29,7 @@ Set up the Supabase backend (6 betc_* tables, auth, storage) and rebrand the PWA
 - [x] Task 13: REBRAND visit-header.tsx (remove AULNAY_DEFAULTS) ✓ 2026-03-21
 - [x] Task 14: UPDATE src/db/schema.ts (rename DB to betclaw) ✓ 2026-03-21
 - [x] Task 15: UPDATE package.json (rename project) ✓ 2026-03-21
-- [x] Task 16: UPDATE .gitignore (.env.local) ✓ 2026-03-21
+- [x] Task 16: UPDATE .gitignore (.env) ✓ 2026-03-21
 
 ### Phase 4: Validation
 - [x] Task 17: FINAL BUILD + TYPECHECK (0 errors) ✓ 2026-03-21

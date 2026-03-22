@@ -372,8 +372,16 @@ Le JSONB `metadata` permet d'ajouter des champs spécifiques sans changer le sch
 
 ## 7. Plan des passes — MVP week-end 22-23 mars
 
-**Scope MVP garanti :** Passes 1-8 (capture terrain + export).
+**Scope MVP garanti :** Passes 1-4 + 7-8 (capture terrain + sync Supabase + agent access).
+**Deferred post-field :** Passe 5 (galerie) + Passe 6 (export ZIP) — faisables au bureau après la mission.
 **Stretch goal :** Passe 9 (chat OpenClaw via PinchChat iframe) si le temps le permet.
+
+### Pivot stratégique (22 mars)
+
+La priorité n'est plus l'export ZIP mais la **sync Supabase**. Raison : si les données sont dans Supabase, l'agent OpenClaw (betclaw) y a accès en temps réel via un skill `supabase-reader`. Cela permet :
+1. L'agent guide l'ingénieur pendant la visite (checklist, questions)
+2. L'agent génère le rapport au bureau à partir des données Supabase
+3. L'export ZIP devient un backup secondaire, pas le chemin critique
 
 ### Passe 1 — Supabase setup complet (2-3h)
 
@@ -382,7 +390,7 @@ Le JSONB `metadata` permet d'ajouter des champs spécifiques sans changer le sch
 - [ ] Créer les 6 tables `betc_*` avec RLS
 - [ ] Configurer Supabase Auth magic link
 - [ ] Créer les buckets `betc-photos` et `betc-reports` avec policies
-- [ ] Variables d'env (`.env.local` + `.env.example`)
+- [ ] Variables d'env (`.env` + `.env.example`)
 - [ ] Rebranding : titre "BETClaw", favicon, meta PWA
 - [ ] Générer types TypeScript
 
@@ -433,25 +441,44 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 - Tout persisté en IndexedDB + sync Supabase
 - Photos compressées et uploadées
 
-### Passe 4 — Sync offline (2-3h)
+### Passe 4 — Supabase sync (2-3h) — **P0 CRITICAL PATH**
 
-- [ ] Queue de sync IndexedDB → Supabase (flush au retour réseau)
-- [ ] Service Worker : cache assets + network-first pour l'API
-- [ ] Mise à jour `db/schema.ts` : buildings + missions + observations + photos
+**Objectif :** Chaque donnée capturée dans la PWA arrive dans Supabase, rendant l'agent betclaw capable de lire le contexte de la mission en temps réel.
+
+**4a — Sync on save (PWA → Supabase) :**
+- [ ] UUID mapping : chaque entité IndexedDB a un `supabaseId` (UUID) pour le lien IDB ↔ Supabase
+- [ ] `syncToSupabase()` sur chaque create/update de mission, building, observation
+- [ ] Upload photo vers Supabase Storage (`betc-photos/{user_id}/{mission_id}/{photo_id}.jpg`)
+- [ ] Enregistrement photo dans `betc_photos` avec `storage_path`
+- [ ] Indicateur visuel de sync status (synced / pending / error)
+
+**4b — Agent skill supabase-reader (VPS config) :**
+- [ ] Créer le workspace `~/.openclaw/workspace-betclaw/` sur le VPS
+- [ ] Skill `supabase-reader` : query `betc_missions`, `betc_observations`, `betc_photos` par mission_id
+- [ ] SOUL.md betclaw : ton pro, spécialisé BET, français
+- [ ] Binding webchat dans `openclaw.json`
+
+**4c — Queue offline (P1, si le temps) :**
+- [ ] Table `syncQueue` dans Dexie : `{ table, supabaseId, operation, payload, createdAt }`
+- [ ] Flush queue on `navigator.onLine` event
+- [ ] Service Worker : cache assets (déjà fait via Workbox)
 
 **Critères de done :**
-- Saisie complète en mode avion → sync auto au retour réseau
-- Zéro perte de données
+- Créer une mission + 3 observations dans la PWA → visibles dans Supabase en < 5 secondes
+- L'agent betclaw peut répondre "qu'est-ce que j'ai capturé ?" avec les données réelles
+- En mode avion : saisie fonctionne (IndexedDB), sync au retour réseau
 
-### Passe 5 — Galerie photos (1-2h)
+### Passe 5 — Galerie photos (1-2h) — **DEFERRED post-field**
+
+> Non bloquant pour lundi. Les photos sont visibles dans les observation cards.
 
 - [ ] `PhotoGallery` : grille en haut de l'écran mission
 - [ ] Tap → plein écran avec navigation précédent/suivant
 - [ ] Lien photo → observation associée
 
-### Passe 6 — Export ZIP (2-3h)
+### Passe 6 — Export ZIP (2-3h) — **DEFERRED post-field**
 
-**Objectif :** Export complet pour traitement bureau.
+> Non bloquant pour lundi. L'agent accède aux données via Supabase. L'export ZIP devient un backup pour usage bureau (desktop).
 
 - [ ] Adapter `export-zip.ts` pour le format BETClaw
 - [ ] ZIP contient : `context.json` + `photos/` + `README.md`
@@ -497,11 +524,12 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 - [ ] Créer bâtiment "La Poste Longjumeau"
 - [ ] Créer mission "Diagnostic toiture V1" avec brief Laurent
-- [ ] Simuler 8 observations terrain
-- [ ] Tester offline → sync
-- [ ] Exporter ZIP
+- [ ] Simuler 5+ observations terrain (photo + texte + tag)
+- [ ] Vérifier sync Supabase : données visibles dans le dashboard Supabase
+- [ ] Tester l'agent : "qu'est-ce que j'ai capturé sur la mission Longjumeau ?"
+- [ ] Tester offline capture → sync au retour réseau (si 4c done)
 - [ ] Installer PWA sur mobile
-- [ ] Commit + push + déploiement
+- [ ] Commit + push + déploiement GitHub Pages
 
 ### Passe 9 — Chat OpenClaw via PinchChat (stretch goal week-end)
 

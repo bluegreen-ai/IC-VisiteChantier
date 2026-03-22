@@ -19,7 +19,7 @@ export const supabase = createClient<Database>(
 ```
 
 ```env
-# .env.local
+# .env
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```

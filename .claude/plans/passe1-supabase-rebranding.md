@@ -67,7 +67,7 @@ The current PWA is hardcoded for the Aulnay balconies project (IC Ingénieurs). 
 - `vite.config.ts` — Base path + manifest
 - `package.json` — Name + add @supabase/supabase-js dependency
 - `.env.example` — Document all env vars
-- `.env.local` — Actual credentials (not committed)
+- `.env` — Actual credentials (not committed)
 
 ### Patterns to Follow
 
@@ -353,7 +353,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in environment variables. Copy .env.example to .env.local and fill in credentials.')
+  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in environment variables. Copy .env.example to .env and fill in credentials.')
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -367,12 +367,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 ---
 
-### Task 6: UPDATE .env.local with real credentials
+### Task 6: UPDATE .env with real credentials
 
 Retrieve project URL via `mcp__supabase__get_project_url` and use the existing anon key from `.env`.
 
 ```bash
-# .env.local (not committed)
+# .env (not committed)
 VITE_SUPABASE_URL=https://zgkvbjqlvebttbnkklpo.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_PyPuIhnem_BIt3l2z1fnYA_o55vEhuB
 ```
@@ -388,7 +388,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_xxx
 # VITE_BETCLAW_WS_URL=wss://betclaw.bluegreen.ai
 ```
 
-**VALIDATE**: `cat .env.local` shows both VITE_ vars set
+**VALIDATE**: `cat .env` shows both VITE_ vars set
 
 ---
 
@@ -548,9 +548,9 @@ Replace any usage of `AULNAY_DEFAULTS` with empty/null fallbacks. The component 
 
 ### Task 16: UPDATE .gitignore
 
-Ensure `.env.local` is ignored (should already be, but verify):
+Ensure `.env` is ignored (should already be, but verify):
 ```
-.env.local
+.env
 .env.*.local
 ```
 
@@ -633,7 +633,7 @@ npm run dev
 - [ ] IndexedDB renamed to `betclaw`
 - [ ] `npm run typecheck` passes
 - [ ] `npm run build` passes
-- [ ] `.env.local` has real Supabase credentials
+- [ ] `.env` has real Supabase credentials
 - [ ] `.env.example` documents all env vars
 - [ ] App loads with BETClaw branding in dev server
 

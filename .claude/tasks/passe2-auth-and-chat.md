@@ -30,7 +30,7 @@ Add email/password login and integrate OpenClaw chat via WebSocket into BETClaw 
 ## Notes
 - Chat is the default tab (first tab in nav bar)
 - If VITE_OPENCLAW_WS_URL / VITE_OPENCLAW_TOKEN not set, chat shows config message
-- .env.local has placeholder VITE_OPENCLAW_TOKEN=FILL_ME — needs real token before testing
+- .env has placeholder VITE_OPENCLAW_TOKEN=FILL_ME — needs real token before testing
 - Caddy reverse proxy needs to be configured for betclaw.bluegreen.ai → localhost:18789
 
 ## Completion

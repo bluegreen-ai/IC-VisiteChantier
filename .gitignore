@@ -20,9 +20,11 @@ Thumbs.db
 *.swo
 *~
 
-# Environment variables (secrets!)
-.env
-.env.*
+# Environment variables
+# .env contains only publishable keys (anon key, public URLs)
+# Real secrets live server-side (edge functions, VPS), never in VITE_* vars
+.env.local
+.env.*.local
 !.env.example
 
 # Node
