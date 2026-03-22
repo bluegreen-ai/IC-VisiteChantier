@@ -31,7 +31,7 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 | 2 | Auth email/password + Chat OpenClaw | — | **Done** ✓ |
 | 3 | Capture observations (photos + text + tags) | — | **Done** ✓ |
 | 4 | Supabase sync (upsert on save + photo upload + offline queue) | — | **Done** ✓ |
-| 4b | Agent skill: supabase-reader on OpenClaw VPS | **P0** | **In progress** |
+| 4b | Agent skill: supabase-reader + JWT passthrough | — | **Done** ✓ |
 | 7 | UX polish + mobile deploy + test | P1 | Not started |
 | 8 | Full Longjumeau flow test (PWA + agent) | **P0** | Not started |
 | 5 | Photo gallery (fullscreen swipe) | P2 | Deferred |
@@ -100,5 +100,5 @@ PWA ──fetch──▶ Supabase Edge Function ──▶ OpenClaw (agent method
 
 ---
 
-**Current Task File**: `.claude/tasks/passe4-supabase-sync.md`
-**Next Action**: Configure agent betclaw on VPS with supabase-reader skill + test full Longjumeau flow
+**Current Task File**: `.claude/tasks/passe4b-agent-auth.md` (completed)
+**Next Action**: Passe 7 (UX polish) + Passe 8 (full Longjumeau flow test) + git push + deploy

@@ -1,5 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useSignal } from '@preact/signals';
 import { db } from '../db/schema';
+import { deleteMission } from '../db/operations';
+import { flushPendingSync } from '../lib/supabase-sync';
 import type { MissionType } from '../types';
 
 interface MissionListProps {
@@ -24,10 +27,17 @@ const TYPE_COLORS: Record<MissionType, string> = {
 export function MissionList({ onSelectMission, onCreateMission }: MissionListProps) {
   const missions = useLiveQuery(() => db.missions.orderBy('createdAt').reverse().toArray());
   const buildings = useLiveQuery(() => db.buildings.toArray());
+  const confirmDeleteId = useSignal<number | null>(null);
 
   if (!missions) return <div class="text-center text-gray-400 py-8">Chargement...</div>;
 
   const buildingMap = new Map((buildings ?? []).map((b) => [b.id!, b.name]));
+
+  async function handleDelete(id: number) {
+    await deleteMission(id);
+    confirmDeleteId.value = null;
+    flushPendingSync().catch(() => {});
+  }
 
   return (
     <div class="px-4 py-3 space-y-3">
@@ -49,15 +59,36 @@ export function MissionList({ onSelectMission, onCreateMission }: MissionListPro
       ) : (
         <div class="space-y-2">
           {missions.map((m) => (
-            <MissionCard
-              key={m.id}
-              name={m.name}
-              type={m.type}
-              date={m.visitedAt}
-              buildingName={m.buildingId ? buildingMap.get(m.buildingId) : undefined}
-              status={m.status}
-              onClick={() => onSelectMission(m.id!)}
-            />
+            <div key={m.id}>
+              <MissionCard
+                name={m.name}
+                type={m.type}
+                date={m.visitedAt}
+                buildingName={m.buildingId ? buildingMap.get(m.buildingId) : undefined}
+                status={m.status}
+                onClick={() => onSelectMission(m.id!)}
+                onDelete={() => (confirmDeleteId.value = m.id!)}
+              />
+              {confirmDeleteId.value === m.id && (
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-1 flex items-center justify-between gap-2">
+                  <span class="text-sm text-red-700">Supprimer cette mission et toutes ses observations ?</span>
+                  <div class="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => (confirmDeleteId.value = null)}
+                      class="text-sm text-gray-500 px-3 py-1.5 rounded-lg touch-manipulation min-h-[36px]"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={() => handleDelete(m.id!)}
+                      class="text-sm text-white bg-red-600 px-3 py-1.5 rounded-lg touch-manipulation active:scale-95 min-h-[36px]"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -82,6 +113,7 @@ function MissionCard({
   buildingName,
   status,
   onClick,
+  onDelete,
 }: {
   name: string;
   type: MissionType;
@@ -89,6 +121,7 @@ function MissionCard({
   buildingName?: string;
   status: string;
   onClick: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div
@@ -109,7 +142,13 @@ function MissionCard({
             <p class="text-sm text-gray-500 mt-1 truncate">{buildingName}</p>
           )}
         </div>
-        <span class="text-gray-300 text-lg flex-shrink-0">›</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          class="text-gray-300 hover:text-red-500 text-lg flex-shrink-0 touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
+          aria-label="Supprimer"
+        >
+          ×
+        </button>
       </div>
     </div>
   );

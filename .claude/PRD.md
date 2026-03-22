@@ -692,7 +692,7 @@ Laurent → BETClaw : *"On fait un rapport structure. Mais ajoute une section re
 
 Par ordre de priorité :
 
-1. **Chat OpenClaw intégré** — l'ingénieur parle à BETClaw dans l'app (si pas fait ce week-end)
+1. **Sync bidirectionnelle au login (Supabase → IndexedDB)** — **BLOQUANT avant test IC Ingénieurs**
 2. **Rapport collaboratif** — échange itératif dans le chat → Word généré
 3. **Checklist IA** — BETClaw génère la checklist à partir du brief
 4. **Mission pré-créée** — BETClaw crée la mission dans Supabase, visible dans la PWA
@@ -700,3 +700,23 @@ Par ordre de priorité :
 6. **Multi-tenant** — plusieurs BET sur la même infrastructure
 7. **Templates rapport par client** — mapping auto selon le type de mission
 8. **Dashboard** — vue synthétique par bâtiment / mission / client
+
+### Détail : Sync bidirectionnelle (Passe 12)
+
+**Problème constaté (22 mars) :** La sync est one-way (IndexedDB → Supabase). Quand un utilisateur se connecte sur un nouvel appareil, il ne voit que les missions créées sur cet appareil. Les missions créées depuis un autre appareil (ou par l'agent) existent dans Supabase mais ne sont pas visibles dans la PWA.
+
+**Ça passe pour le MVP mono-device, mais c'est BLOQUANT pour le pilote IC Ingénieurs :** si Laurent crée une mission depuis son PC et va sur le terrain avec son téléphone, il ne la voit pas.
+
+**Scope :**
+
+- [ ] **Pull au login** : après authentification, récupérer depuis Supabase les buildings et missions de l'utilisateur et les injecter dans IndexedDB (upsert par `supabaseId`)
+- [ ] **Pull des observations** : quand on ouvre une mission, récupérer ses observations depuis Supabase si elles ne sont pas en local
+- [ ] **Gestion des conflits** : si un record existe en local ET dans Supabase, comparer `updated_at` — le plus récent gagne
+- [ ] **Photos** : ne PAS télécharger les blobs au pull (trop lourd). Afficher un placeholder "photo sur le serveur" avec un bouton pour charger à la demande
+- [ ] **Indicateur visuel** : "Synchronisation en cours..." au login, puis affichage normal
+
+**Ce qui n'est PAS dans le scope :**
+- Sync temps réel (Supabase Realtime) — overkill pour l'instant
+- Résolution de conflits complexe — le dernier `updated_at` gagne, point
+
+**Estimation :** 3-4h
