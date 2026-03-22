@@ -1,8 +1,9 @@
 import { useSignal } from '@preact/signals';
 import { TextField } from './ui/text-field';
 import { SelectField } from './ui/select-field';
-import { MISSION_TYPES, MISSION_STATUSES } from '../types';
-import type { Mission, Building, MissionType, MissionStatus } from '../types';
+import { MISSION_TYPES, MISSION_STATUSES, BUILDING_TYPES } from '../types';
+import type { Mission, Building, MissionType, MissionStatus, BuildingType } from '../types';
+import { updateBuilding } from '../db/operations';
 
 interface MissionHeaderProps {
   mission: Mission | null;
@@ -30,6 +31,14 @@ const TYPE_BADGE_COLORS: Record<MissionType, string> = {
   autre: 'bg-gray-100 text-gray-700',
 };
 
+const BUILDING_TYPE_LABELS: Record<BuildingType, string> = {
+  logement_collectif: 'Logement collectif',
+  erp: 'ERP',
+  tertiaire: 'Tertiaire',
+  industriel: 'Industriel',
+  other: 'Autre',
+};
+
 export function MissionHeader({ mission, building, onSave }: MissionHeaderProps) {
   const expanded = useSignal(false);
 
@@ -39,7 +48,13 @@ export function MissionHeader({ mission, building, onSave }: MissionHeaderProps)
   const visitedAt = useSignal(mission?.visitedAt ?? new Date().toISOString().split('T')[0]);
   const status = useSignal<MissionStatus>(mission?.status ?? 'active');
 
-  function handleSave() {
+  const bldgName = useSignal(building?.name ?? '');
+  const bldgAddress = useSignal(building?.address ?? '');
+  const bldgCity = useSignal(building?.city ?? '');
+  const bldgPostalCode = useSignal(building?.postalCode ?? '');
+  const bldgType = useSignal<BuildingType>(building?.buildingType ?? 'other');
+
+  async function handleSave() {
     onSave({
       name: name.value,
       type: type.value,
@@ -47,6 +62,15 @@ export function MissionHeader({ mission, building, onSave }: MissionHeaderProps)
       visitedAt: visitedAt.value || undefined,
       status: status.value,
     });
+    if (building?.id) {
+      await updateBuilding(building.id, {
+        name: bldgName.value,
+        address: bldgAddress.value || undefined,
+        city: bldgCity.value || undefined,
+        postalCode: bldgPostalCode.value || undefined,
+        buildingType: bldgType.value,
+      });
+    }
   }
 
   if (!mission) return null;
@@ -63,7 +87,11 @@ export function MissionHeader({ mission, building, onSave }: MissionHeaderProps)
             {mission.visitedAt && <span class="text-xs text-gray-500">{mission.visitedAt}</span>}
           </div>
           {building && (
-            <p class="text-xs text-gray-400 mt-0.5 truncate">{building.name}</p>
+            <p class="text-xs text-gray-400 mt-0.5 truncate">
+              {building.name}
+              {building.address && ` — ${building.address}`}
+              {building.city && `, ${building.city}`}
+            </p>
           )}
         </div>
         <button
@@ -112,6 +140,27 @@ export function MissionHeader({ mission, building, onSave }: MissionHeaderProps)
               class="mt-1 block w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-base shadow-sm focus:border-betc-teal focus:ring-1 focus:ring-betc-teal touch-manipulation"
             />
           </label>
+
+          {building && (
+            <div class="border-t border-gray-100 pt-3 space-y-3">
+              <h3 class="text-sm font-semibold text-gray-600">Bâtiment</h3>
+              <TextField label="Nom" value={bldgName.value} onChange={(v) => (bldgName.value = v)} />
+              <div class="grid grid-cols-2 gap-3">
+                <TextField label="Adresse" value={bldgAddress.value} onChange={(v) => (bldgAddress.value = v)} />
+                <TextField label="Ville" value={bldgCity.value} onChange={(v) => (bldgCity.value = v)} />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <TextField label="Code postal" value={bldgPostalCode.value} onChange={(v) => (bldgPostalCode.value = v)} />
+                <SelectField
+                  label="Type"
+                  value={bldgType.value}
+                  options={BUILDING_TYPES as unknown as string[]}
+                  labels={Object.values(BUILDING_TYPE_LABELS)}
+                  onChange={(v) => (bldgType.value = v as BuildingType)}
+                />
+              </div>
+            </div>
+          )}
 
           <button
             onClick={handleSave}

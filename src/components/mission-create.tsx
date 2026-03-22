@@ -2,8 +2,8 @@ import { useSignal } from '@preact/signals';
 import { TextField } from './ui/text-field';
 import { SelectField } from './ui/select-field';
 import { createMission, createBuilding } from '../db/operations';
-import { MISSION_TYPES } from '../types';
-import type { MissionType } from '../types';
+import { MISSION_TYPES, BUILDING_TYPES } from '../types';
+import type { MissionType, BuildingType } from '../types';
 
 interface MissionCreateProps {
   onCreated: (missionId: number) => void;
@@ -25,6 +25,8 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
   const buildingName = useSignal('');
   const buildingAddress = useSignal('');
   const buildingCity = useSignal('');
+  const buildingPostalCode = useSignal('');
+  const buildingType = useSignal<BuildingType>('other');
   const saving = useSignal(false);
   const error = useSignal('');
   const nameError = useSignal('');
@@ -47,6 +49,8 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
           name: buildingName.value.trim(),
           address: buildingAddress.value.trim() || undefined,
           city: buildingCity.value.trim() || undefined,
+          postalCode: buildingPostalCode.value.trim() || undefined,
+          buildingType: buildingType.value,
         });
       }
 
@@ -131,6 +135,21 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
               value={buildingCity.value}
               onChange={(v) => (buildingCity.value = v)}
               placeholder="Longjumeau"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <TextField
+              label="Code postal"
+              value={buildingPostalCode.value}
+              onChange={(v) => (buildingPostalCode.value = v)}
+              placeholder="91160"
+            />
+            <SelectField
+              label="Type de bâtiment"
+              value={buildingType.value}
+              options={BUILDING_TYPES as unknown as string[]}
+              labels={['Logement collectif', 'ERP', 'Tertiaire', 'Industriel', 'Autre']}
+              onChange={(v) => (buildingType.value = v as BuildingType)}
             />
           </div>
         </div>

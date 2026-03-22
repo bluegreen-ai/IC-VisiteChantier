@@ -20,6 +20,11 @@ export async function createBuilding(
   return id;
 }
 
+export async function updateBuilding(id: number, data: Partial<Building>): Promise<void> {
+  await db.buildings.update(id, { ...data, syncStatus: 'pending', updatedAt: new Date().toISOString() });
+  syncRecord('buildings', id).catch(() => {});
+}
+
 export async function listBuildings(): Promise<Building[]> {
   return db.buildings.orderBy('createdAt').reverse().toArray();
 }
