@@ -14,7 +14,7 @@
 |-------|-------|--------|
 | 1 | Supabase setup (6 tables + auth + storage + RLS) + rebranding | **Done** ✓ |
 | 2 | Auth email/password + Chat OpenClaw | **Done** ✓ |
-| 3 | Capture observations (photos + text + tags) — KEY PASS | Not started |
+| 3 | Capture observations (photos + text + tags) — KEY PASS | **Done** ✓ |
 | 4 | Offline sync (IndexedDB ↔ Supabase) | Not started |
 | 5 | Photo gallery | Not started |
 | 6 | ZIP export (context.json + photos) | Not started |
@@ -66,5 +66,5 @@ PWA BETClaw                    Supabase              OpenClaw Gateway
 
 ---
 
-**Current Task File**: `.claude/tasks/passe1-supabase-rebranding.md`
-**Next Action**: Executing Passe 1 — Supabase setup + rebranding to BETClaw.
+**Current Task File**: `.claude/tasks/passe3-capture-observations.md`
+**Next Action**: Passe 4 — Offline sync (IndexedDB ↔ Supabase)

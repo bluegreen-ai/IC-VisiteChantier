@@ -1,49 +1,44 @@
 import { useSignal } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
-import { SelectField } from './ui/select-field';
 import { TextField } from './ui/text-field';
 import { PhotoCapture } from './ui/photo-capture';
 import type { CapturedPhoto } from './ui/photo-capture';
 import { addObservation, updateObservation, savePhoto, getPhotos, deletePhoto } from '../db/operations';
-import { ETAGES, FACADES } from '../types';
-import type { BatimentConfig, Observation } from '../types';
+import { OBSERVATION_TAGS, TAG_CONFIG } from '../types';
+import type { Observation, ObservationTag } from '../types';
 
 interface ObservationFormProps {
-  visiteId: number;
-  batiments: BatimentConfig[];
+  missionId: number;
+  observationCount: number;
   editingObservation?: Observation | null;
   onDone: () => void;
 }
 
-export function ObservationForm({ visiteId, batiments, editingObservation, onDone }: ObservationFormProps) {
-  const batiment = useSignal(batiments[0]?.id ?? '');
-  const cage = useSignal('');
-  const etage = useSignal('');
-  const facade = useSignal('');
-  const observationText = useSignal('');
+export function ObservationForm({ missionId, observationCount, editingObservation, onDone }: ObservationFormProps) {
+  const element = useSignal('');
+  const tag = useSignal<ObservationTag>('general');
+  const description = useSignal('');
+  const cause = useSignal('');
   const action = useSignal('');
   const photos = useSignal<CapturedPhoto[]>([]);
   const existingPhotoIds = useSignal<number[]>([]);
   const saving = useSignal(false);
   const error = useSignal('');
-  const observationError = useSignal('');
-  const observationRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const descriptionError = useSignal('');
+  const descriptionRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const formKey = useSignal(0);
 
   const isEditing = !!editingObservation;
 
-  // Load editing observation data
   useEffect(() => {
     if (editingObservation) {
-      batiment.value = editingObservation.batiment;
-      cage.value = editingObservation.cage ?? '';
-      etage.value = editingObservation.etage;
-      facade.value = editingObservation.facade;
-      observationText.value = editingObservation.observation;
-      action.value = editingObservation.action;
+      element.value = editingObservation.element ?? '';
+      tag.value = editingObservation.tag;
+      description.value = editingObservation.description;
+      cause.value = editingObservation.cause ?? '';
+      action.value = editingObservation.action ?? '';
       existingPhotoIds.value = editingObservation.photoIds ?? [];
 
-      // Load existing photo blobs as previews
       if (editingObservation.photoIds?.length) {
         getPhotos(editingObservation.photoIds).then((dbPhotos) => {
           photos.value = dbPhotos.map((p) => ({
@@ -61,39 +56,35 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
   }, [editingObservation?.id]);
 
   function resetForm() {
-    // Clean up preview URLs
     photos.value.forEach((p) => URL.revokeObjectURL(p.previewUrl));
-    observationText.value = '';
+    element.value = '';
+    tag.value = 'general';
+    description.value = '';
+    cause.value = '';
     action.value = '';
     photos.value = [];
     existingPhotoIds.value = [];
     error.value = '';
-    observationError.value = '';
+    descriptionError.value = '';
     formKey.value++;
-    // Keep batiment/etage/facade for faster same-floor capture
   }
-
-  const selectedBat = batiments.find((b) => b.id === batiment.value);
-  const hasCages = selectedBat?.cages && selectedBat.cages.length > 0;
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
-    if (!observationText.value.trim()) {
-      observationError.value = 'Ce champ est obligatoire';
-      observationRef.current?.focus();
+    if (!description.value.trim()) {
+      descriptionError.value = 'Ce champ est obligatoire';
+      descriptionRef.current?.focus();
       return;
     }
 
     saving.value = true;
     error.value = '';
-    observationError.value = '';
+    descriptionError.value = '';
 
     try {
-      // Save new photos to IndexedDB
       const photoIds: number[] = [];
 
       if (isEditing) {
-        // Delete old photos that were removed
         for (const oldId of existingPhotoIds.value) {
           await deletePhoto(oldId);
         }
@@ -101,7 +92,7 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
 
       for (const photo of photos.value) {
         const id = await savePhoto({
-          visiteId,
+          missionId,
           blob: photo.blob,
           filename: `photo-${Date.now()}-${photoIds.length}.jpg`,
         });
@@ -110,24 +101,23 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
 
       if (isEditing && editingObservation) {
         await updateObservation(editingObservation.id!, {
-          batiment: batiment.value,
-          cage: hasCages ? cage.value : undefined,
-          etage: etage.value,
-          facade: facade.value,
-          observation: observationText.value.trim(),
-          action: action.value.trim(),
+          element: element.value.trim() || undefined,
+          tag: tag.value,
+          description: description.value.trim(),
+          cause: cause.value.trim() || undefined,
+          action: action.value.trim() || undefined,
           photoIds,
         });
       } else {
         await addObservation({
-          visiteId,
-          batiment: batiment.value,
-          cage: hasCages ? cage.value : undefined,
-          etage: etage.value,
-          facade: facade.value,
-          observation: observationText.value.trim(),
-          action: action.value.trim(),
+          missionId,
+          element: element.value.trim() || undefined,
+          tag: tag.value,
+          description: description.value.trim(),
+          cause: cause.value.trim() || undefined,
+          action: action.value.trim() || undefined,
           photoIds,
+          sortOrder: observationCount,
         });
       }
 
@@ -155,55 +145,55 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
         </div>
       )}
 
-      <div class="grid grid-cols-2 gap-3">
-        <SelectField
-          label="Bâtiment"
-          value={batiment.value}
-          options={batiments.map((b) => b.id)}
-          onChange={(v) => {
-            batiment.value = v;
-            cage.value = '';
-          }}
-        />
-        {hasCages && (
-          <SelectField
-            label="Cage"
-            value={cage.value}
-            options={selectedBat!.cages!}
-            onChange={(v) => (cage.value = v)}
-            placeholder="Cage..."
-          />
-        )}
-        <SelectField
-          label="Étage"
-          value={etage.value}
-          options={ETAGES}
-          onChange={(v) => (etage.value = v)}
-          placeholder="Étage..."
-        />
-        <SelectField
-          label="Façade"
-          value={facade.value}
-          options={['', ...FACADES]}
-          onChange={(v) => (facade.value = v)}
-          placeholder="Façade..."
-        />
+      <TextField
+        label="Élément observé"
+        value={element.value}
+        onChange={(v) => (element.value = v)}
+        placeholder="Balcon 3ème, Poutre RDC, Zone affaissement..."
+      />
+
+      {/* Tag selector — horizontal pills */}
+      <div>
+        <span class="text-sm font-medium text-gray-700 block mb-1.5">Catégorie</span>
+        <div class="flex flex-wrap gap-2">
+          {OBSERVATION_TAGS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => (tag.value = t)}
+              class={`px-3 py-1.5 rounded-full text-sm font-medium touch-manipulation ${
+                tag.value === t ? TAG_CONFIG[t].color + ' ring-2 ring-offset-1' : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              {TAG_CONFIG[t].label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <TextField
-        label="Observation"
-        value={observationText.value}
-        onChange={(v) => { observationText.value = v; if (v.trim()) observationError.value = ''; }}
-        placeholder="Description de l'observation..."
-        error={observationError.value}
-        inputRef={observationRef}
+        label="Description"
+        value={description.value}
+        onChange={(v) => { description.value = v; if (v.trim()) descriptionError.value = ''; }}
+        placeholder="Fissure traversante de 5mm..."
+        error={descriptionError.value}
+        multiline
+        rows={3}
+        inputRef={descriptionRef}
+      />
+
+      <TextField
+        label="Cause probable"
+        value={cause.value}
+        onChange={(v) => (cause.value = v)}
+        placeholder="Infiltration d'eau (optionnel)"
       />
 
       <TextField
         label="Action corrective"
         value={action.value}
         onChange={(v) => (action.value = v)}
-        placeholder="Action à entreprendre (optionnel)"
+        placeholder="Reprise étanchéité (optionnel)"
       />
 
       <PhotoCapture

@@ -2,11 +2,12 @@ interface SelectFieldProps {
   label: string;
   value: string;
   options: readonly string[];
+  labels?: readonly string[];
   onChange: (value: string) => void;
   placeholder?: string;
 }
 
-export function SelectField({ label, value, options, onChange, placeholder }: SelectFieldProps) {
+export function SelectField({ label, value, options, labels, onChange, placeholder }: SelectFieldProps) {
   return (
     <label class="block">
       <span class="text-sm font-medium text-gray-700">{label}</span>
@@ -20,9 +21,9 @@ export function SelectField({ label, value, options, onChange, placeholder }: Se
             {placeholder}
           </option>
         )}
-        {options.map((opt) => (
+        {options.map((opt, i) => (
           <option key={opt} value={opt}>
-            {opt}
+            {labels?.[i] ?? opt}
           </option>
         ))}
       </select>

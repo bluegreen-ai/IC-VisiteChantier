@@ -2,23 +2,20 @@ import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
 import { getPhotos, deleteObservation } from '../db/operations';
 import { db } from '../db/schema';
+import { TAG_CONFIG } from '../types';
 import type { Observation } from '../types';
 
 interface ObservationCardProps {
   observation: Observation;
-  index: number;
-  visitNumber: number;
+  refLabel: string;
   onEdit: (obs: Observation) => void;
 }
 
-export function ObservationCard({ observation, index, visitNumber, onEdit }: ObservationCardProps) {
+export function ObservationCard({ observation, refLabel, onEdit }: ObservationCardProps) {
   const photoUrls = useSignal<string[]>([]);
   const deleting = useSignal(false);
 
-  const ref = `V${visitNumber}-${String(index + 1).padStart(2, '0')}`;
-  const location = [observation.cage, observation.etage, observation.facade ? `Façade ${observation.facade}` : '']
-    .filter(Boolean)
-    .join(' — ');
+  const tagConfig = TAG_CONFIG[observation.tag];
 
   useEffect(() => {
     if (observation.photoIds?.length) {
@@ -61,7 +58,7 @@ export function ObservationCard({ observation, index, visitNumber, onEdit }: Obs
             <img
               key={i}
               src={url}
-              alt={`Photo ${ref}-${i + 1}`}
+              alt={`Photo ${refLabel}-${i + 1}`}
               class="w-14 h-14 object-cover rounded-md"
             />
           ))}
@@ -70,16 +67,21 @@ export function ObservationCard({ observation, index, visitNumber, onEdit }: Obs
 
       {/* Content */}
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="inline-block bg-betc-teal text-white text-xs font-bold px-2 py-0.5 rounded">
-            {ref}
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class={`text-xs font-medium px-2 py-0.5 rounded-full ${tagConfig.color}`}>
+            {tagConfig.label}
           </span>
-          <span class="text-xs text-gray-500 truncate">{location}</span>
+          <span class="inline-block bg-betc-teal text-white text-xs font-bold px-2 py-0.5 rounded">
+            {refLabel}
+          </span>
+          {observation.element && (
+            <span class="text-xs text-gray-500 truncate">{observation.element}</span>
+          )}
           {photoUrls.value.length > 0 && (
             <span class="text-xs text-gray-400">📷{photoUrls.value.length > 1 ? ` ×${photoUrls.value.length}` : ''}</span>
           )}
         </div>
-        <p class="text-sm mt-1 line-clamp-2">{observation.observation}</p>
+        <p class="text-sm mt-1 line-clamp-2">{observation.description}</p>
         {observation.action && (
           <p class="text-xs text-action-orange italic mt-0.5">
             → {observation.action}

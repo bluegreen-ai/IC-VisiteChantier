@@ -1,51 +1,63 @@
 import { db } from './schema';
-import type { Visite, Observation, Photo } from '../types';
+import type { Mission, Building, Observation, Photo } from '../types';
 
-// --- Visites ---
+// --- Buildings ---
 
-export async function createVisite(
-  data: Omit<Visite, 'id' | 'createdAt' | 'updatedAt'>,
+export async function createBuilding(
+  data: Omit<Building, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<number> {
   const now = new Date().toISOString();
-  return db.visites.add({ ...data, createdAt: now, updatedAt: now } as Visite);
+  return db.buildings.add({ ...data, createdAt: now, updatedAt: now } as Building);
 }
 
-export async function getVisite(id: number): Promise<Visite | undefined> {
-  return db.visites.get(id);
+export async function listBuildings(): Promise<Building[]> {
+  return db.buildings.orderBy('createdAt').reverse().toArray();
 }
 
-export async function updateVisite(id: number, data: Partial<Visite>): Promise<void> {
-  await db.visites.update(id, { ...data, updatedAt: new Date().toISOString() });
+export async function getBuilding(id: number): Promise<Building | undefined> {
+  return db.buildings.get(id);
 }
 
-export async function listVisites(): Promise<Visite[]> {
-  return db.visites.orderBy('createdAt').reverse().toArray();
+// --- Missions ---
+
+export async function createMission(
+  data: Omit<Mission, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<number> {
+  const now = new Date().toISOString();
+  return db.missions.add({ ...data, createdAt: now, updatedAt: now } as Mission);
 }
 
-export async function deleteVisite(id: number): Promise<void> {
-  await db.transaction('rw', [db.visites, db.observations, db.photos], async () => {
-    await db.photos.where('visiteId').equals(id).delete();
-    await db.observations.where('visiteId').equals(id).delete();
-    await db.visites.delete(id);
+export async function getMission(id: number): Promise<Mission | undefined> {
+  return db.missions.get(id);
+}
+
+export async function updateMission(id: number, data: Partial<Mission>): Promise<void> {
+  await db.missions.update(id, { ...data, updatedAt: new Date().toISOString() });
+}
+
+export async function listMissions(): Promise<Mission[]> {
+  return db.missions.orderBy('createdAt').reverse().toArray();
+}
+
+export async function deleteMission(id: number): Promise<void> {
+  await db.transaction('rw', [db.missions, db.observations, db.photos], async () => {
+    await db.photos.where('missionId').equals(id).delete();
+    await db.observations.where('missionId').equals(id).delete();
+    await db.missions.delete(id);
   });
 }
 
 // --- Observations ---
 
 export async function addObservation(
-  data: Omit<Observation, 'id' | 'createdAt'>,
+  data: Omit<Observation, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<number> {
-  return db.observations.add({
-    ...data,
-    createdAt: new Date().toISOString(),
-  } as Observation);
+  const now = new Date().toISOString();
+  return db.observations.add({ ...data, createdAt: now, updatedAt: now } as Observation);
 }
 
-export async function updateObservation(
-  id: number,
-  data: Partial<Observation>,
-): Promise<void> {
-  await db.observations.update(id, data);
+export async function updateObservation(id: number, data: Partial<Observation>): Promise<void> {
+  await db.observations.update(id, { ...data, updatedAt: new Date().toISOString() });
 }
 
 export async function deleteObservation(id: number): Promise<void> {
@@ -58,8 +70,12 @@ export async function deleteObservation(id: number): Promise<void> {
   });
 }
 
-export async function getObservationsForVisite(visiteId: number): Promise<Observation[]> {
-  return db.observations.where('visiteId').equals(visiteId).sortBy('createdAt');
+export async function getObservationsForMission(missionId: number): Promise<Observation[]> {
+  return db.observations.where('missionId').equals(missionId).sortBy('createdAt');
+}
+
+export async function getObservationCount(missionId: number): Promise<number> {
+  return db.observations.where('missionId').equals(missionId).count();
 }
 
 // --- Photos ---
@@ -71,7 +87,7 @@ export async function savePhoto(
     return await db.photos.add({ ...data, createdAt: new Date().toISOString() } as Photo);
   } catch (err) {
     if ((err as DOMException).name === 'QuotaExceededError') {
-      throw new Error('Stockage plein. Supprimez des photos ou des visites.');
+      throw new Error('Stockage plein. Supprimez des photos ou des missions.');
     }
     throw err;
   }

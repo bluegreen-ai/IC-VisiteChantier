@@ -1,92 +1,113 @@
-/** Matches the JSON schema expected by render_cr_visite.py */
-export interface ExportContext {
-  titre_service: string;
-  client: string;
-  residence: string;
-  batiments_visites: string;
-  adresse: string;
-  code_postal_ville: string;
-  ref_dossier: string;
-  date_visite: string;
-  participants: Participant[];
-  objet_visite: string;
-  synthese: string;
-  observations: ExportObservation[];
-  conclusion: string;
+/** Tag categories for observations */
+export const OBSERVATION_TAGS = [
+  'structure', 'thermique', 'acces', 'environnement', 'general',
+] as const;
+export type ObservationTag = typeof OBSERVATION_TAGS[number];
+
+/** Mission types */
+export const MISSION_TYPES = [
+  'diagnostic', 'suivi_chantier', 'reception', 'autre',
+] as const;
+export type MissionType = typeof MISSION_TYPES[number];
+
+/** Mission statuses */
+export const MISSION_STATUSES = ['active', 'completed', 'archived'] as const;
+export type MissionStatus = typeof MISSION_STATUSES[number];
+
+/** Building types (matches Supabase betc_buildings.building_type) */
+export const BUILDING_TYPES = [
+  'logement_collectif', 'erp', 'tertiaire', 'industriel', 'other',
+] as const;
+export type BuildingType = typeof BUILDING_TYPES[number];
+
+/** Building stored in IndexedDB */
+export interface Building {
+  id?: number;
+  name: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  buildingType?: BuildingType;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Participant {
-  nom: string;
-  fonction: string;
-  entreprise: string;
-  contact: string;
+/** Mission stored in IndexedDB */
+export interface Mission {
+  id?: number;
+  buildingId?: number;
+  name: string;
+  type: MissionType;
+  status: MissionStatus;
+  brief?: string;
+  visitedAt?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** Observation as stored in the export JSON */
-export interface ExportObservation {
-  ref: string;
-  etage_facade: string;
-  observation: string;
-  action: string;
-  photo: string;
-}
-
-/** Building configuration — supports optional named stairwells */
-export interface BatimentConfig {
-  id: string;
-  label: string;
-  cages?: string[];
-}
-
-/** Observation as stored in IndexedDB (richer than export) */
+/** Observation stored in IndexedDB */
 export interface Observation {
   id?: number;
-  visiteId: number;
-  batiment: string;
-  cage?: string;
-  etage: string;
-  facade: string;
-  observation: string;
-  action: string;
+  missionId: number;
+  ref?: string;
+  element?: string;
+  description: string;
+  cause?: string;
+  action?: string;
+  tag: ObservationTag;
   photoIds: number[];
+  sortOrder: number;
   createdAt: string;
+  updatedAt: string;
 }
 
-/** Photo blob stored separately in IndexedDB */
+/** Photo blob stored in IndexedDB */
 export interface Photo {
   id?: number;
-  visiteId: number;
+  missionId: number;
   observationId?: number;
   blob: Blob;
   filename: string;
   createdAt: string;
 }
 
-/** Visit session stored in IndexedDB */
-export interface Visite {
-  id?: number;
-  titre_service: string;
-  client: string;
-  residence: string;
-  batiments_visites: string;
-  adresse: string;
-  code_postal_ville: string;
-  ref_dossier: string;
-  date_visite: Date;
-  visitNumber: number;
-  objet_visite: string;
-  synthese: string;
-  conclusion: string;
-  participants: Participant[];
-  batiments: BatimentConfig[];
-  createdAt: string;
-  updatedAt: string;
+/** Tag display config */
+export const TAG_CONFIG: Record<ObservationTag, { label: string; color: string }> = {
+  structure: { label: 'Structure', color: 'bg-red-100 text-red-700' },
+  thermique: { label: 'Thermique', color: 'bg-orange-100 text-orange-700' },
+  acces: { label: 'Accès', color: 'bg-blue-100 text-blue-700' },
+  environnement: { label: 'Environnement', color: 'bg-green-100 text-green-700' },
+  general: { label: 'Général', color: 'bg-gray-100 text-gray-700' },
+};
+
+/** Export context for BETClaw ZIP */
+export interface ExportContext {
+  betclaw_version: string;
+  mission: {
+    name: string;
+    type: string;
+    brief?: string;
+    visited_at?: string;
+    status: string;
+  };
+  building?: {
+    name: string;
+    address?: string;
+    city?: string;
+    building_type?: string;
+  };
+  observations: ExportObservation[];
 }
 
-/** Floor and facade options */
-export const ETAGES = [
-  'RDC', '1er', '2ème', '3ème', '4ème', '5ème',
-  '6ème', '7ème', '8ème', '9ème', '10ème', 'Général',
-] as const;
-
-export const FACADES = ['Nord', 'Sud', 'Est', 'Ouest'] as const;
+export interface ExportObservation {
+  ref: string;
+  element?: string;
+  description: string;
+  cause?: string;
+  action?: string;
+  tag: string;
+  photos: string[];
+  timestamp: string;
+}

@@ -1,18 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/schema';
 import { ObservationCard } from './observation-card';
-import type { Observation } from '../types';
+import { generateRef } from '../lib/ref-generator';
+import type { Observation, MissionType } from '../types';
 
 interface ObservationListProps {
-  visiteId: number;
-  visitNumber: number;
+  missionId: number;
+  missionType: MissionType;
   onEdit: (obs: Observation) => void;
 }
 
-export function ObservationList({ visiteId, visitNumber, onEdit }: ObservationListProps) {
+export function ObservationList({ missionId, missionType, onEdit }: ObservationListProps) {
   const observations = useLiveQuery(
-    () => db.observations.where('visiteId').equals(visiteId).sortBy('createdAt'),
-    [visiteId],
+    () => db.observations.where('missionId').equals(missionId).sortBy('createdAt'),
+    [missionId],
   );
 
   if (!observations) return <div class="text-center text-gray-400 py-4">Chargement...</div>;
@@ -34,8 +35,7 @@ export function ObservationList({ visiteId, visitNumber, onEdit }: ObservationLi
         <ObservationCard
           key={obs.id}
           observation={obs}
-          index={i}
-          visitNumber={visitNumber}
+          refLabel={generateRef(missionType, i)}
           onEdit={onEdit}
         />
       ))}

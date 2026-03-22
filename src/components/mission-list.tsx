@@ -1,0 +1,116 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/schema';
+import type { MissionType } from '../types';
+
+interface MissionListProps {
+  onSelectMission: (id: number) => void;
+  onCreateMission: () => void;
+}
+
+const TYPE_LABELS: Record<MissionType, string> = {
+  diagnostic: 'Diagnostic',
+  suivi_chantier: 'Suivi chantier',
+  reception: 'Réception',
+  autre: 'Autre',
+};
+
+const TYPE_COLORS: Record<MissionType, string> = {
+  diagnostic: 'bg-red-100 text-red-700',
+  suivi_chantier: 'bg-blue-100 text-blue-700',
+  reception: 'bg-green-100 text-green-700',
+  autre: 'bg-gray-100 text-gray-700',
+};
+
+export function MissionList({ onSelectMission, onCreateMission }: MissionListProps) {
+  const missions = useLiveQuery(() => db.missions.orderBy('createdAt').reverse().toArray());
+  const buildings = useLiveQuery(() => db.buildings.toArray());
+
+  if (!missions) return <div class="text-center text-gray-400 py-8">Chargement...</div>;
+
+  const buildingMap = new Map((buildings ?? []).map((b) => [b.id!, b.name]));
+
+  return (
+    <div class="px-4 py-3 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-800">Missions</h2>
+        <span class="text-sm text-gray-400">{missions.length} mission{missions.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {missions.length === 0 ? (
+        <div class="text-center py-12">
+          <p class="text-gray-400 mb-4">Aucune mission. Créez-en une pour commencer.</p>
+          <button
+            onClick={onCreateMission}
+            class="bg-betc-teal text-white font-medium rounded-lg px-6 py-3 active:scale-95 touch-manipulation"
+          >
+            Nouvelle mission
+          </button>
+        </div>
+      ) : (
+        <div class="space-y-2">
+          {missions.map((m) => (
+            <MissionCard
+              key={m.id}
+              name={m.name}
+              type={m.type}
+              date={m.visitedAt}
+              buildingName={m.buildingId ? buildingMap.get(m.buildingId) : undefined}
+              status={m.status}
+              onClick={() => onSelectMission(m.id!)}
+            />
+          ))}
+        </div>
+      )}
+
+      {missions.length > 0 && (
+        <button
+          onClick={onCreateMission}
+          class="fixed bottom-20 right-4 w-14 h-14 bg-betc-teal text-white text-2xl rounded-full shadow-lg flex items-center justify-center active:scale-95 touch-manipulation z-10"
+          aria-label="Nouvelle mission"
+        >
+          +
+        </button>
+      )}
+    </div>
+  );
+}
+
+function MissionCard({
+  name,
+  type,
+  date,
+  buildingName,
+  status,
+  onClick,
+}: {
+  name: string;
+  type: MissionType;
+  date?: string;
+  buildingName?: string;
+  status: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      class="bg-white rounded-xl shadow-sm p-4 active:bg-gray-50 touch-manipulation cursor-pointer"
+      onClick={onClick}
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <h3 class="font-semibold text-gray-800 truncate">{name}</h3>
+          <div class="flex items-center gap-2 mt-1 flex-wrap">
+            <span class={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLORS[type]}`}>
+              {TYPE_LABELS[type]}
+            </span>
+            {date && <span class="text-xs text-gray-500">{date}</span>}
+            {status === 'completed' && <span class="text-xs text-green-600 font-medium">Terminée</span>}
+          </div>
+          {buildingName && (
+            <p class="text-sm text-gray-500 mt-1 truncate">{buildingName}</p>
+          )}
+        </div>
+        <span class="text-gray-300 text-lg flex-shrink-0">›</span>
+      </div>
+    </div>
+  );
+}

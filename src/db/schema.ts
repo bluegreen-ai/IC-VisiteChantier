@@ -1,13 +1,26 @@
 import Dexie, { type Table } from 'dexie';
-import type { Visite, Observation, Photo } from '../types';
+import type { Mission, Building, Observation, Photo } from '../types';
 
-export class VisiteDB extends Dexie {
-  visites!: Table<Visite, number>;
+export class BETClawDB extends Dexie {
+  buildings!: Table<Building, number>;
+  missions!: Table<Mission, number>;
   observations!: Table<Observation, number>;
   photos!: Table<Photo, number>;
 
   constructor() {
     super('betclaw');
+
+    // Version 2: BETClaw model (breaks from v1 IC-VisiteChantier)
+    this.version(2).stores({
+      buildings: '++id, createdAt',
+      missions: '++id, buildingId, status, createdAt',
+      observations: '++id, missionId, tag, sortOrder, createdAt',
+      photos: '++id, missionId, observationId',
+      // Delete old tables from v1
+      visites: null,
+    });
+
+    // Keep v1 for migration path (Dexie requires it)
     this.version(1).stores({
       visites: '++id, createdAt',
       observations: '++id, visiteId, createdAt',
@@ -16,4 +29,4 @@ export class VisiteDB extends Dexie {
   }
 }
 
-export const db = new VisiteDB();
+export const db = new BETClawDB();
