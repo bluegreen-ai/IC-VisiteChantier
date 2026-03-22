@@ -10,6 +10,24 @@ export class BETClawDB extends Dexie {
   constructor() {
     super('betclaw');
 
+    // Version 3: Add sync metadata (supabaseId, syncStatus)
+    this.version(3).stores({
+      buildings: '++id, createdAt, supabaseId, syncStatus',
+      missions: '++id, buildingId, status, createdAt, supabaseId, syncStatus',
+      observations: '++id, missionId, tag, sortOrder, createdAt, supabaseId, syncStatus',
+      photos: '++id, missionId, observationId, supabaseId, syncStatus',
+    }).upgrade(tx => {
+      const tables = ['buildings', 'missions', 'observations', 'photos'] as const;
+      return Promise.all(
+        tables.map(t =>
+          tx.table(t).toCollection().modify(record => {
+            record.supabaseId ??= crypto.randomUUID();
+            record.syncStatus ??= 'pending';
+          })
+        )
+      );
+    });
+
     // Version 2: BETClaw model (breaks from v1 IC-VisiteChantier)
     this.version(2).stores({
       buildings: '++id, createdAt',

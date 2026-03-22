@@ -14,6 +14,9 @@ export type MissionType = typeof MISSION_TYPES[number];
 export const MISSION_STATUSES = ['active', 'completed', 'archived'] as const;
 export type MissionStatus = typeof MISSION_STATUSES[number];
 
+/** Sync status for IndexedDB → Supabase sync */
+export type SyncStatus = 'pending' | 'synced' | 'error';
+
 /** Building types (matches Supabase betc_buildings.building_type) */
 export const BUILDING_TYPES = [
   'logement_collectif', 'erp', 'tertiaire', 'industriel', 'other',
@@ -23,6 +26,8 @@ export type BuildingType = typeof BUILDING_TYPES[number];
 /** Building stored in IndexedDB */
 export interface Building {
   id?: number;
+  supabaseId?: string;
+  syncStatus?: SyncStatus;
   name: string;
   address?: string;
   city?: string;
@@ -36,6 +41,8 @@ export interface Building {
 /** Mission stored in IndexedDB */
 export interface Mission {
   id?: number;
+  supabaseId?: string;
+  syncStatus?: SyncStatus;
   buildingId?: number;
   name: string;
   type: MissionType;
@@ -50,6 +57,8 @@ export interface Mission {
 /** Observation stored in IndexedDB */
 export interface Observation {
   id?: number;
+  supabaseId?: string;
+  syncStatus?: SyncStatus;
   missionId: number;
   ref?: string;
   element?: string;
@@ -66,6 +75,8 @@ export interface Observation {
 /** Photo blob stored in IndexedDB */
 export interface Photo {
   id?: number;
+  supabaseId?: string;
+  syncStatus?: SyncStatus;
   missionId: number;
   observationId?: number;
   blob: Blob;

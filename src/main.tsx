@@ -1,12 +1,14 @@
 import { render } from 'preact';
 import { App } from './app';
 import { initAuth } from './lib/auth';
+import { initSync } from './lib/supabase-sync';
 import './styles.css';
 
-// Request persistent storage on first launch
-navigator.storage?.persist?.();
+async function bootstrap() {
+  navigator.storage?.persist?.();
+  await initAuth();
+  initSync();
+  render(<App />, document.getElementById('app')!);
+}
 
-// Initialize auth before rendering
-initAuth();
-
-render(<App />, document.getElementById('app')!);
+bootstrap();

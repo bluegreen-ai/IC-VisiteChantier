@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db/schema';
 import { updateMission, getBuilding } from './db/operations';
 import { session, authLoading, signOut } from './lib/auth';
+import { syncLabel, isOnline } from './lib/supabase-sync';
 import { LoginScreen } from './components/login-screen';
 import { MissionList } from './components/mission-list';
 import { MissionCreate } from './components/mission-create';
@@ -186,12 +187,21 @@ function AuthenticatedApp() {
             {currentView.value !== 'missions' ? 'Missions' : 'BETClaw'}
           </h1>
         </div>
-        <button
-          onClick={() => signOut()}
-          class="text-white/70 text-sm touch-manipulation"
-        >
-          Déconnexion
-        </button>
+        <div class="flex items-center gap-2">
+          <span class={`text-xs px-2 py-0.5 rounded-full ${
+            !isOnline.value ? 'bg-gray-500/30 text-white/60'
+            : syncLabel.value.startsWith('✓') ? 'bg-white/20 text-white/80'
+            : 'bg-amber-400/30 text-amber-100'
+          }`}>
+            {syncLabel.value}
+          </span>
+          <button
+            onClick={() => signOut()}
+            class="text-white/70 text-sm touch-manipulation"
+          >
+            Déconnexion
+          </button>
+        </div>
       </header>
 
       {/* Content */}

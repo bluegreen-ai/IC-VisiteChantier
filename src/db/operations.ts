@@ -1,13 +1,22 @@
 import { db } from './schema';
+import { syncRecord } from '../lib/supabase-sync';
 import type { Mission, Building, Observation, Photo } from '../types';
 
 // --- Buildings ---
 
 export async function createBuilding(
-  data: Omit<Building, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Building, 'id' | 'createdAt' | 'updatedAt' | 'supabaseId' | 'syncStatus'>,
 ): Promise<number> {
   const now = new Date().toISOString();
-  return db.buildings.add({ ...data, createdAt: now, updatedAt: now } as Building);
+  const id = await db.buildings.add({
+    ...data,
+    supabaseId: crypto.randomUUID(),
+    syncStatus: 'pending',
+    createdAt: now,
+    updatedAt: now,
+  } as Building);
+  syncRecord('buildings', id).catch(() => {});
+  return id;
 }
 
 export async function listBuildings(): Promise<Building[]> {
@@ -21,10 +30,18 @@ export async function getBuilding(id: number): Promise<Building | undefined> {
 // --- Missions ---
 
 export async function createMission(
-  data: Omit<Mission, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Mission, 'id' | 'createdAt' | 'updatedAt' | 'supabaseId' | 'syncStatus'>,
 ): Promise<number> {
   const now = new Date().toISOString();
-  return db.missions.add({ ...data, createdAt: now, updatedAt: now } as Mission);
+  const id = await db.missions.add({
+    ...data,
+    supabaseId: crypto.randomUUID(),
+    syncStatus: 'pending',
+    createdAt: now,
+    updatedAt: now,
+  } as Mission);
+  syncRecord('missions', id).catch(() => {});
+  return id;
 }
 
 export async function getMission(id: number): Promise<Mission | undefined> {
@@ -32,7 +49,8 @@ export async function getMission(id: number): Promise<Mission | undefined> {
 }
 
 export async function updateMission(id: number, data: Partial<Mission>): Promise<void> {
-  await db.missions.update(id, { ...data, updatedAt: new Date().toISOString() });
+  await db.missions.update(id, { ...data, syncStatus: 'pending', updatedAt: new Date().toISOString() });
+  syncRecord('missions', id).catch(() => {});
 }
 
 export async function listMissions(): Promise<Mission[]> {
@@ -50,14 +68,23 @@ export async function deleteMission(id: number): Promise<void> {
 // --- Observations ---
 
 export async function addObservation(
-  data: Omit<Observation, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Observation, 'id' | 'createdAt' | 'updatedAt' | 'supabaseId' | 'syncStatus'>,
 ): Promise<number> {
   const now = new Date().toISOString();
-  return db.observations.add({ ...data, createdAt: now, updatedAt: now } as Observation);
+  const id = await db.observations.add({
+    ...data,
+    supabaseId: crypto.randomUUID(),
+    syncStatus: 'pending',
+    createdAt: now,
+    updatedAt: now,
+  } as Observation);
+  syncRecord('observations', id).catch(() => {});
+  return id;
 }
 
 export async function updateObservation(id: number, data: Partial<Observation>): Promise<void> {
-  await db.observations.update(id, { ...data, updatedAt: new Date().toISOString() });
+  await db.observations.update(id, { ...data, syncStatus: 'pending', updatedAt: new Date().toISOString() });
+  syncRecord('observations', id).catch(() => {});
 }
 
 export async function deleteObservation(id: number): Promise<void> {
@@ -81,10 +108,17 @@ export async function getObservationCount(missionId: number): Promise<number> {
 // --- Photos ---
 
 export async function savePhoto(
-  data: Omit<Photo, 'id' | 'createdAt'>,
+  data: Omit<Photo, 'id' | 'createdAt' | 'supabaseId' | 'syncStatus'>,
 ): Promise<number> {
   try {
-    return await db.photos.add({ ...data, createdAt: new Date().toISOString() } as Photo);
+    const id = await db.photos.add({
+      ...data,
+      supabaseId: crypto.randomUUID(),
+      syncStatus: 'pending',
+      createdAt: new Date().toISOString(),
+    } as Photo);
+    syncRecord('photos', id).catch(() => {});
+    return id;
   } catch (err) {
     if ((err as DOMException).name === 'QuotaExceededError') {
       throw new Error('Stockage plein. Supprimez des photos ou des missions.');
