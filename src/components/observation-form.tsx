@@ -143,8 +143,8 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
   return (
     <form onSubmit={handleSubmit} class="space-y-3 bg-white p-4 rounded-xl shadow-sm" key={formKey.value}>
       {isEditing && (
-        <div class="flex items-center justify-between bg-ic-blue-light px-3 py-2 rounded-lg -mt-1 mb-1">
-          <span class="text-sm font-medium text-ic-blue">Modification en cours</span>
+        <div class="flex items-center justify-between bg-betc-teal-light px-3 py-2 rounded-lg -mt-1 mb-1">
+          <span class="text-sm font-medium text-betc-teal">Modification en cours</span>
           <button
             type="button"
             onClick={() => { resetForm(); onDone(); }}
@@ -218,7 +218,7 @@ export function ObservationForm({ visiteId, batiments, editingObservation, onDon
       <button
         type="submit"
         disabled={saving.value}
-        class="w-full min-h-[48px] bg-ic-blue text-white font-medium rounded-lg px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100"
+        class="w-full min-h-[48px] bg-betc-teal text-white font-medium rounded-lg px-4 py-3 active:scale-95 touch-manipulation disabled:opacity-50 disabled:active:scale-100"
       >
         {saving.value
           ? 'Enregistrement...'

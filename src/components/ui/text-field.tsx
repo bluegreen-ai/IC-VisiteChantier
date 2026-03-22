@@ -23,7 +23,7 @@ export function TextField({
 }: TextFieldProps) {
   const borderClass = error
     ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-    : 'border-gray-300 focus:border-ic-blue focus:ring-ic-blue';
+    : 'border-gray-300 focus:border-betc-teal focus:ring-betc-teal';
   const baseClass =
     `mt-1 block w-full min-h-[44px] rounded-lg border px-3 py-2 text-base shadow-sm focus:ring-1 touch-manipulation ${borderClass}`;
 

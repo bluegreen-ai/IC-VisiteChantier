@@ -1,5 +1,5 @@
 {
-  "name": "ic-visitechantier",
+  "name": "betclaw",
   "version": "1.0.0",
   "description": "Site visit report generator for IC Ingénieurs Conseils. Automates the creation of construction site inspection reports (CR Visite de Chantier) from field notes and photos.",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:types": "npx supabase gen types --project-id zgkvbjqlvebttbnkklpo --lang typescript > src/types/database.types.ts"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   "homepage": "https://github.com/bluegreen-ai/IC-VisiteChantier#readme",
   "dependencies": {
     "@preact/signals": "^2.8.2",
+    "@supabase/supabase-js": "^2.99.3",
     "dexie": "^4.3.0",
     "dexie-react-hooks": "^4.2.0",
     "jszip": "^3.10.1",

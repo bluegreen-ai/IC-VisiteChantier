@@ -107,7 +107,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
   return (
     <div class="space-y-4">
       <div class="bg-white rounded-xl shadow-sm p-4">
-        <h2 class="font-semibold text-ic-blue mb-3">Récapitulatif</h2>
+        <h2 class="font-semibold text-betc-teal mb-3">Récapitulatif</h2>
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
             <span class="text-gray-500">Observations</span>
@@ -125,7 +125,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="bg-ic-blue text-white">
+              <tr class="bg-betc-teal text-white">
                 <th class="px-2 py-2 text-left">Réf</th>
                 <th class="px-2 py-2 text-left">Localisation</th>
                 <th class="px-2 py-2 text-left">Observation</th>
@@ -134,8 +134,8 @@ export function ExportView({ visiteId }: ExportViewProps) {
             </thead>
             <tbody>
               {observations.map((obs, i) => (
-                <tr key={obs.id} class={i % 2 === 0 ? 'bg-ic-blue-light' : ''}>
-                  <td class="px-2 py-1.5 font-mono text-xs font-bold text-ic-blue">
+                <tr key={obs.id} class={i % 2 === 0 ? 'bg-betc-teal-light' : ''}>
+                  <td class="px-2 py-1.5 font-mono text-xs font-bold text-betc-teal">
                     {generateRef(visite.visitNumber, i)}
                   </td>
                   <td class="px-2 py-1.5 text-xs">
@@ -158,7 +158,7 @@ export function ExportView({ visiteId }: ExportViewProps) {
           onChange={(v) => (objet.value = v)}
           multiline
           rows={4}
-          placeholder="IC Ingénieurs Conseils assure le suivi..."
+          placeholder="Description de la mission..."
         />
         <TextField
           label="Synthèse des observations"

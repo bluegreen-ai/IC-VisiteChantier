@@ -71,7 +71,7 @@ export function ObservationCard({ observation, index, visitNumber, onEdit }: Obs
       {/* Content */}
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
-          <span class="inline-block bg-ic-blue text-white text-xs font-bold px-2 py-0.5 rounded">
+          <span class="inline-block bg-betc-teal text-white text-xs font-bold px-2 py-0.5 rounded">
             {ref}
           </span>
           <span class="text-xs text-gray-500 truncate">{location}</span>

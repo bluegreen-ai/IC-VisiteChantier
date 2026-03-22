@@ -13,7 +13,7 @@ export function SelectField({ label, value, options, onChange, placeholder }: Se
       <select
         value={value}
         onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
-        class="mt-1 block w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-base shadow-sm focus:border-ic-blue focus:ring-1 focus:ring-ic-blue touch-manipulation"
+        class="mt-1 block w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-base shadow-sm focus:border-betc-teal focus:ring-1 focus:ring-betc-teal touch-manipulation"
       >
         {placeholder && (
           <option value="" disabled>

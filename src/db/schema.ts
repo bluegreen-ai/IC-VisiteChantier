@@ -7,7 +7,7 @@ export class VisiteDB extends Dexie {
   photos!: Table<Photo, number>;
 
   constructor() {
-    super('ic-visite-chantier');
+    super('betclaw');
     this.version(1).stores({
       visites: '++id, createdAt',
       observations: '++id, visiteId, createdAt',
