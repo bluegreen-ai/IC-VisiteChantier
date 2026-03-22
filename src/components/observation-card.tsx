@@ -1,7 +1,6 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
 import { getPhotos, deleteObservation } from '../db/operations';
-import { db } from '../db/schema';
 import { TAG_CONFIG } from '../types';
 import type { Observation } from '../types';
 
@@ -36,9 +35,6 @@ export function ObservationCard({ observation, refLabel, onEdit }: ObservationCa
     if (!confirm('Supprimer cette observation ?')) return;
     deleting.value = true;
     try {
-      if (observation.photoIds?.length) {
-        await db.photos.bulkDelete(observation.photoIds);
-      }
       await deleteObservation(observation.id!);
     } catch (err) {
       console.error('Delete failed:', err);

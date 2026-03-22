@@ -2,7 +2,7 @@ import { signal, computed } from '@preact/signals';
 import { supabase } from './supabase';
 import { user } from './auth';
 import { db } from '../db/schema';
-import type { Building, Mission, Observation, Photo } from '../types';
+import type { Building, Mission, Observation, Photo, SyncQueueEntry } from '../types';
 import type { Json } from '../types/database.types';
 
 // --- Signals ---
@@ -35,6 +35,7 @@ async function refreshPendingCount(): Promise<void> {
     db.missions.where('syncStatus').anyOf(statuses).count(),
     db.observations.where('syncStatus').anyOf(statuses).count(),
     db.photos.where('syncStatus').anyOf(statuses).count(),
+    db.syncQueue.count(),
   ]);
   syncPending.value = counts.reduce((a, b) => a + b, 0);
 }
@@ -199,7 +200,51 @@ export async function flushPendingSync(): Promise<void> {
   const photos = await db.photos.where('syncStatus').anyOf(statuses).toArray();
   for (const p of photos) await syncPhoto(p);
 
+  // Process queued deletes
+  await flushDeleteQueue();
+
   await refreshPendingCount();
+}
+
+async function flushDeleteQueue(): Promise<void> {
+  const entries = await db.syncQueue.orderBy('createdAt').toArray();
+  if (!entries.length) return;
+
+  // Process children before parents to respect FK constraints
+  const order: SyncQueueEntry['table'][] = ['photos', 'observations', 'missions', 'buildings'];
+  const sorted = order.flatMap(t => entries.filter(e => e.table === t));
+
+  for (const entry of sorted) {
+    try {
+      // 1. Delete Storage files (non-fatal)
+      if (entry.storagePaths?.length) {
+        const { error } = await supabase.storage
+          .from('betc-photos')
+          .remove(entry.storagePaths);
+        if (error) console.warn('Storage cleanup failed (non-fatal):', error);
+      }
+
+      // 2. Delete DB row
+      const { error } = await supabase
+        .from(`betc_${entry.table}` as 'betc_buildings')
+        .delete()
+        .eq('id', entry.supabaseId);
+
+      if (error) {
+        // PGRST = row not found (already deleted via CASCADE) — not an error
+        if (!error.code?.startsWith('PGRST')) {
+          console.error(`Delete sync failed [${entry.table}/${entry.supabaseId}]:`, error);
+          continue; // Leave in queue for retry
+        }
+      }
+
+      // 3. Remove from queue on success
+      await db.syncQueue.delete(entry.id!);
+    } catch (err) {
+      console.error('Delete flush error:', err);
+      // Leave in queue for retry on next flush
+    }
+  }
 }
 
 // --- Sync a single record (called after each write) ---

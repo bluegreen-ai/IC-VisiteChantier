@@ -1,5 +1,6 @@
 import { db } from './schema';
 import { syncRecord } from '../lib/supabase-sync';
+import { user } from '../lib/auth';
 import type { Mission, Building, Observation, Photo } from '../types';
 
 // --- Buildings ---
@@ -58,11 +59,40 @@ export async function listMissions(): Promise<Mission[]> {
 }
 
 export async function deleteMission(id: number): Promise<void> {
-  await db.transaction('rw', [db.missions, db.observations, db.photos], async () => {
-    await db.photos.where('missionId').equals(id).delete();
-    await db.observations.where('missionId').equals(id).delete();
-    await db.missions.delete(id);
-  });
+  const mission = await db.missions.get(id);
+
+  if (mission?.supabaseId) {
+    // Collect photo storage paths BEFORE deleting locally
+    const photos = await db.photos.where('missionId').equals(id).toArray();
+    const userId = user.value?.id;
+    const storagePaths = photos
+      .filter(p => p.supabaseId && userId)
+      .map(p => `${userId}/${mission.supabaseId}/${p.supabaseId}.jpg`);
+
+    await db.transaction('rw', [db.missions, db.observations, db.photos, db.syncQueue], async () => {
+      await db.photos.where('missionId').equals(id).delete();
+      await db.observations.where('missionId').equals(id).delete();
+      await db.missions.delete(id);
+      // Queue mission delete — CASCADE handles child DB rows in Supabase
+      // But we need storage paths for photo file cleanup
+      await db.syncQueue.add({
+        operation: 'delete',
+        table: 'missions',
+        supabaseId: mission.supabaseId!,
+        storagePaths: storagePaths.length > 0 ? storagePaths : undefined,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  } else {
+    // Never synced — just delete locally
+    await db.transaction('rw', [db.missions, db.observations, db.photos], async () => {
+      await db.photos.where('missionId').equals(id).delete();
+      await db.observations.where('missionId').equals(id).delete();
+      await db.missions.delete(id);
+    });
+  }
+
+  syncRecord('missions', id).catch(() => {}); // Update pending count
 }
 
 // --- Observations ---
@@ -89,12 +119,54 @@ export async function updateObservation(id: number, data: Partial<Observation>):
 
 export async function deleteObservation(id: number): Promise<void> {
   const obs = await db.observations.get(id);
-  await db.transaction('rw', [db.observations, db.photos], async () => {
-    if (obs?.photoIds?.length) {
-      await db.photos.bulkDelete(obs.photoIds);
+
+  if (obs?.supabaseId) {
+    const mission = await db.missions.get(obs.missionId);
+    const userId = user.value?.id;
+    const photos = obs.photoIds?.length
+      ? (await db.photos.bulkGet(obs.photoIds)).filter((p): p is Photo => !!p)
+      : [];
+
+    // Build storage paths for photo cleanup
+    const storagePaths: string[] = [];
+    for (const p of photos) {
+      if (p.supabaseId && userId && mission?.supabaseId) {
+        storagePaths.push(`${userId}/${mission.supabaseId}/${p.supabaseId}.jpg`);
+      }
     }
-    await db.observations.delete(id);
-  });
+
+    await db.transaction('rw', [db.observations, db.photos, db.syncQueue], async () => {
+      if (obs.photoIds?.length) await db.photos.bulkDelete(obs.photoIds);
+      await db.observations.delete(id);
+
+      // Queue photo DB deletes (no CASCADE from observation_id)
+      for (const p of photos) {
+        if (p.supabaseId) {
+          await db.syncQueue.add({
+            operation: 'delete',
+            table: 'photos',
+            supabaseId: p.supabaseId,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      // Queue observation delete (with storage paths for photo file cleanup)
+      await db.syncQueue.add({
+        operation: 'delete',
+        table: 'observations',
+        supabaseId: obs.supabaseId!,
+        storagePaths: storagePaths.length > 0 ? storagePaths : undefined,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  } else {
+    // Never synced
+    await db.transaction('rw', [db.observations, db.photos], async () => {
+      if (obs?.photoIds?.length) await db.photos.bulkDelete(obs.photoIds);
+      await db.observations.delete(id);
+    });
+  }
 }
 
 export async function getObservationsForMission(missionId: number): Promise<Observation[]> {
@@ -138,5 +210,26 @@ export async function getPhotos(ids: number[]): Promise<Photo[]> {
 }
 
 export async function deletePhoto(id: number): Promise<void> {
-  await db.photos.delete(id);
+  const photo = await db.photos.get(id);
+
+  if (photo?.supabaseId) {
+    const userId = user.value?.id;
+    const mission = await db.missions.get(photo.missionId);
+    const storagePath = (userId && mission?.supabaseId)
+      ? [`${userId}/${mission.supabaseId}/${photo.supabaseId}.jpg`]
+      : undefined;
+
+    await db.transaction('rw', [db.photos, db.syncQueue], async () => {
+      await db.photos.delete(id);
+      await db.syncQueue.add({
+        operation: 'delete',
+        table: 'photos',
+        supabaseId: photo.supabaseId!,
+        storagePaths: storagePath,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  } else {
+    await db.photos.delete(id);
+  }
 }

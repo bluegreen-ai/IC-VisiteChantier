@@ -17,6 +17,16 @@ export type MissionStatus = typeof MISSION_STATUSES[number];
 /** Sync status for IndexedDB → Supabase sync */
 export type SyncStatus = 'pending' | 'synced' | 'error';
 
+/** Entry in the offline delete sync queue */
+export interface SyncQueueEntry {
+  id?: number;
+  operation: 'delete';
+  table: 'buildings' | 'missions' | 'observations' | 'photos';
+  supabaseId: string;
+  storagePaths?: string[];
+  createdAt: string;
+}
+
 /** Building types (matches Supabase betc_buildings.building_type) */
 export const BUILDING_TYPES = [
   'logement_collectif', 'erp', 'tertiaire', 'industriel', 'other',

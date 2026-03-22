@@ -1,14 +1,24 @@
 import Dexie, { type Table } from 'dexie';
-import type { Mission, Building, Observation, Photo } from '../types';
+import type { Mission, Building, Observation, Photo, SyncQueueEntry } from '../types';
 
 export class BETClawDB extends Dexie {
   buildings!: Table<Building, number>;
   missions!: Table<Mission, number>;
   observations!: Table<Observation, number>;
   photos!: Table<Photo, number>;
+  syncQueue!: Table<SyncQueueEntry, number>;
 
   constructor() {
     super('betclaw');
+
+    // Version 4: Add syncQueue table for offline deletes
+    this.version(4).stores({
+      buildings: '++id, createdAt, supabaseId, syncStatus',
+      missions: '++id, buildingId, status, createdAt, supabaseId, syncStatus',
+      observations: '++id, missionId, tag, sortOrder, createdAt, supabaseId, syncStatus',
+      photos: '++id, missionId, observationId, supabaseId, syncStatus',
+      syncQueue: '++id, table, createdAt',
+    });
 
     // Version 3: Add sync metadata (supabaseId, syncStatus)
     this.version(3).stores({
