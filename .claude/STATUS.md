@@ -32,6 +32,7 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 | 3 | Capture observations (photos + text + tags) | — | **Done** ✓ |
 | 4 | Supabase sync (upsert on save + photo upload + offline queue) | — | **Done** ✓ |
 | 4b | Agent skill: supabase-reader + JWT passthrough | — | **Done** ✓ |
+| 9 | Chat OpenClaw intégré dans la PWA | — | **Done** ✓ |
 | 7 | UX polish + mobile deploy + test | P1 | Not started |
 | 8 | Full Longjumeau flow test (PWA + agent) | **P0** | Not started |
 | 5 | Photo gallery (fullscreen swipe) | P2 | Deferred |
@@ -42,7 +43,7 @@ The critical path for Monday is NOT offline queues or gallery polish — it's **
 | Passe | Scope | Priority | Status |
 |-------|-------|----------|--------|
 | 10 | Agent BETClaw complet (SOUL.md, skills, report-generator) | P1 | Not started |
-| 11 | **Auth propre: Edge Function proxy + extraSystemPrompt** | P1 | Not started |
+| 11 | **Auth propre: Edge Function proxy + extraSystemPrompt + contexte mission (IDs)** | P1 | Not started |
 
 **Rationale Passe 11:**
 - OpenClaw `connect` and `chat.send` have `additionalProperties: false` — no custom context fields

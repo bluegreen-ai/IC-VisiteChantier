@@ -361,9 +361,10 @@ Le JSONB `metadata` permet d'ajouter des champs spécifiques sans changer le sch
 - **US-08** : Exporter un ZIP (context.json + photos + README)
 - **US-09** : Auth magic link (sans mot de passe)
 
-### Chat IA (stretch goal week-end / post-MVP)
+### Chat IA
 
-- **US-07** : Poser une question à BETClaw depuis le chat intégré (via PinchChat / WebSocket OpenClaw)
+- **US-07** : Poser une question à BETClaw depuis le chat intégré (WebSocket OpenClaw) — **Done** ✓
+- **US-07e** : Le chat reçoit le contexte mission (mission_id + observation_id) pour que l'agent sache sur quoi porte la conversation — **Post Passe 11 (auth propre)**
 - **US-07b** : BETClaw rappelle les points de checklist non couverts
 - **US-07c** : Discuter du rapport au bureau (stratégie, angle, storytelling)
 - **US-07d** : BETClaw génère le rapport Word après l'échange
@@ -372,9 +373,8 @@ Le JSONB `metadata` permet d'ajouter des champs spécifiques sans changer le sch
 
 ## 7. Plan des passes — MVP week-end 22-23 mars
 
-**Scope MVP garanti :** Passes 1-4 + 7-8 (capture terrain + sync Supabase + agent access).
+**Scope MVP garanti :** Passes 1-4 + 7-9 (capture terrain + sync Supabase + agent access + chat).
 **Deferred post-field :** Passe 5 (galerie) + Passe 6 (export ZIP) — faisables au bureau après la mission.
-**Stretch goal :** Passe 9 (chat OpenClaw via PinchChat iframe) si le temps le permet.
 
 ### Pivot stratégique (22 mars)
 
@@ -531,26 +531,11 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 - [ ] Installer PWA sur mobile
 - [ ] Commit + push + déploiement GitHub Pages
 
-### Passe 9 — Chat OpenClaw via PinchChat (stretch goal week-end)
+### Passe 9 — Chat OpenClaw intégré — **Done** ✓
 
-**Objectif :** Intégrer le chat BETClaw dans la PWA via PinchChat.
+Chat WebSocket OpenClaw opérationnel dans la PWA (onglet Chat dans la mission detail).
 
-**Repo PinchChat :** https://github.com/MarlBurroW/pinchchat (MIT)
-**Stack :** React 19 + Vite 7 + Tailwind v4 — même stack que BETClaw.
-
-**Option A — iframe (rapide, ~2h) :**
-- [ ] Déployer PinchChat (Docker ou static) avec env vars : `VITE_AGENT_SESSION=agent:betclaw:main`, `VITE_CLIENT_ID=webchat`, `VITE_LOCALE=fr`
-- [ ] Ajouter un onglet "Chat" dans la PWA avec `<iframe src="...">` vers PinchChat
-- [ ] Passer le contexte mission via URL params ou post-message
-
-**Option B — port du protocole WebSocket (propre, ~4h) :**
-- [ ] Copier `src/lib/gateway.ts` de PinchChat (pur TS, pas de dépendance React)
-- [ ] Créer `useOpenClawChat` hook Preact (connect + send + receive + streaming)
-- [ ] Composant `ChatWindow` (bulles user/assistant)
-- [ ] Composant `ChatInput` (textarea + envoi)
-- [ ] Variable d'env : `VITE_BETCLAW_WS_URL=wss://betclaw.bluegreen.ai`
-
-**Pré-requis :** Agent `betclaw` configuré sur le gateway OpenClaw (workspace + SOUL.md + bindings).
+**Amélioration planifiée (post Passe 11) :** Passer le contexte mission (`mission_id`, `observation_id` courante) via `extraSystemPrompt` pour que l'agent sache automatiquement sur quelle mission/observation porte la conversation. Nécessite l'auth propre (Edge Function proxy) d'abord — voir Passe 11.
 
 ---
 
@@ -604,12 +589,14 @@ Supabase (RLS enforced — agent ne voit que les données de l'utilisateur)
 - [ ] Modifier la PWA : remplacer la connexion WebSocket directe par des appels fetch vers l'Edge Function
 - [ ] Supprimer le message silencieux `[system:supabase_auth:...]`
 - [ ] Mettre à jour le skill `supabase-reader` pour extraire le JWT depuis `extraSystemPrompt`
+- [ ] **Contexte mission dans `extraSystemPrompt`** : la PWA envoie `mission_id` (et optionnellement `observation_id`) dans la requête à l'Edge Function → injecté dans `extraSystemPrompt` avec le JWT → l'agent sait automatiquement sur quelle mission porte la conversation
 
 **Avantages :**
 - Le JWT ne transite jamais dans le protocole chat ni le contexte LLM conversationnel
 - Le JWT est validé server-side avant d'atteindre l'agent
 - Sécurité multi-tenant : même sous prompt injection, impossible d'accéder aux données d'un autre utilisateur
 - Utilise `extraSystemPrompt` — mécanisme natif OpenClaw, pas un hack
+- L'agent reçoit le contexte mission (IDs) sans que l'utilisateur ait besoin de le préciser dans le chat
 
 ---
 
