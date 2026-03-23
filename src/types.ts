@@ -43,6 +43,8 @@ export interface Building {
   city?: string;
   postalCode?: string;
   buildingType?: BuildingType;
+  latitude?: number;
+  longitude?: number;
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -78,6 +80,7 @@ export interface Observation {
   tag: ObservationTag;
   photoIds: number[];
   sortOrder: number;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

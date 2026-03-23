@@ -421,25 +421,45 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 ### Passe 3 — Capture observations (3-4h)
 
-**Objectif :** Capturer photos + texte + tags, liés à la mission.
+**Objectif :** Capturer photos + texte, liés à la mission.
 
 **C'est la passe clé.**
 
-- [ ] `ObservationCapture` : bouton photo (caméra/galerie) + champ texte + sélecteur de tag
-- [ ] Tags : `structure` | `thermique` | `acces` | `environnement` | `general`
-- [ ] Liste des observations dans la mission (scrollable, triable par timestamp)
-- [ ] Chaque observation : description + N photos + tag + timestamp
-- [ ] Tap sur observation → éditer / ajouter photo / changer tag
-- [ ] Compression photo côté client (max 800px, qualité 0.75, < 2MB)
-- [ ] Upload photos → Supabase Storage en background
-- [ ] Référence auto-générée (D1-01, D1-02... pour diagnostic, V1-01 pour visite)
+#### Field test lesson (2026-03-23)
 
-**UX terrain :** gros boutons, utilisable d'une main, feedback immédiat.
+> On site, engineers climb ladders, hold measuring tools, talk to building managers.
+> The app competes with "take photo + type in Google Docs". If it's not faster, they won't use it.
+> **Every field on the form that isn't title/photo/note is a reason to quit.**
+
+#### Field mode (on site) — minimal form
+- [ ] **Title** (optional) — auto-generated "Obs #N" if blank
+- [ ] **Photos** (camera/gallery) — displayed first, it's the primary action
+- [ ] **Note** (free text) — for everything: disorders, building context, history, measurements
+- [ ] Save = instant return to list, everything else in background
+
+**No tags, no cause, no action on the field.** These are office concerns.
+
+#### Office mode (at desk) — enrich after
+- [ ] Edit observation: add tag, cause, action, refine description
+- [ ] BETClaw AI can suggest categorization (building context vs disorder vs recommendation)
+
+#### Photo handling
+- [ ] **No re-compression** — store raw JPEG from phone (Android already compresses at capture)
+- [ ] **Crop tool** — let engineer frame the relevant part (remove sky, ground, finger)
+- [ ] Upload to Supabase Storage in background
+- [ ] Reference auto-generated (D1-01, D1-02... for diagnostic, V1-01 for visit)
+
+#### Philosophy: "everything is a note"
+On the field, no distinction between building context, historical info, and disorders.
+All captured as observations. Reorganization happens at the office (manually or via BETClaw AI).
+
+**UX terrain :** big touch targets, one-hand usable, instant feedback.
 
 **Critères de done :**
-- Prendre 5 photos avec descriptions en < 3 minutes
-- Tout persisté en IndexedDB + sync Supabase
-- Photos compressées et uploadées
+- Capture 5 observations with photos in < 2 minutes
+- Save is non-blocking (< 200ms perceived)
+- Photos stored at full resolution
+- All persisted in IndexedDB + sync to Supabase in background
 
 ### Passe 4 — Supabase sync (2-3h) — **P0 CRITICAL PATH**
 
@@ -513,23 +533,34 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 }
 ```
 
-### Passe 7 — Polish UX (2h)
+### Passe 7 — Polish UX (2h) — REVISED post field-test
 
 - [ ] Loading states (skeleton cards)
 - [ ] Toasts d'erreur
 - [ ] Build prod clean
 - [ ] Auth magic link testée sur mobile
 
-### Passe 8 — Test flow Longjumeau (2h)
+### Passe 8 — Test flow Longjumeau (2h) — **Done** (2026-03-23)
 
-- [ ] Créer bâtiment "La Poste Longjumeau"
-- [ ] Créer mission "Diagnostic toiture V1" avec brief Laurent
-- [ ] Simuler 5+ observations terrain (photo + texte + tag)
-- [ ] Vérifier sync Supabase : données visibles dans le dashboard Supabase
-- [ ] Tester l'agent : "qu'est-ce que j'ai capturé sur la mission Longjumeau ?"
-- [ ] Tester offline capture → sync au retour réseau (si 4c done)
-- [ ] Installer PWA sur mobile
-- [ ] Commit + push + déploiement GitHub Pages
+Real field test performed. Results: app works, data captured, bugs and UX feedback documented.
+See STATUS.md for full debrief.
+
+### Passe 12 — Post field-test iteration (NEW)
+
+**Bugs:**
+- [ ] Fix photo sync: `observation_id` not passed to `betc_photos`
+- [ ] Fix building linkage: `building_id` not propagated to mission
+- [ ] Investigate WiFi-only sync behavior
+
+**UX simplification:**
+- [ ] Simplify observation form to 3 fields (title, photos, note)
+- [ ] Remove photo re-compression — store raw JPEG
+- [ ] Non-blocking save (no ZIP notification)
+- [ ] Persist chat history (reload betc_messages on mount)
+
+**Enhancements:**
+- [ ] Photo crop tool
+- [ ] Office mode: add tag/cause/action after the fact
 
 ### Passe 9 — Chat OpenClaw intégré — **Done** ✓
 

@@ -54,6 +54,8 @@ async function syncBuilding(building: Building): Promise<void> {
     city: building.city ?? null,
     postal_code: building.postalCode ?? null,
     building_type: building.buildingType ?? null,
+    latitude: building.latitude ?? null,
+    longitude: building.longitude ?? null,
     metadata: (building.metadata ?? null) as Json,
     created_at: building.createdAt,
     updated_at: building.updatedAt,
@@ -71,12 +73,15 @@ async function syncMission(mission: Mission): Promise<void> {
   const userId = getUserId();
   if (!userId || !mission.supabaseId) return;
 
-  // Resolve building supabaseId if linked
+  // Resolve building supabaseId if linked — chain sync if needed
   let buildingSupabaseId: string | null = null;
   if (mission.buildingId) {
-    const building = await db.buildings.get(mission.buildingId);
+    let building = await db.buildings.get(mission.buildingId);
+    if (building && building.syncStatus !== 'synced') {
+      await syncBuilding(building);
+      building = await db.buildings.get(mission.buildingId);
+    }
     buildingSupabaseId = building?.supabaseId ?? null;
-    // If building not synced yet, skip mission sync (will retry on flush)
     if (mission.buildingId && !buildingSupabaseId) return;
   }
 
@@ -119,7 +124,7 @@ async function syncObservation(obs: Observation): Promise<void> {
     cause: obs.cause ?? null,
     action: obs.action ?? null,
     sort_order: obs.sortOrder ?? 0,
-    metadata: { tag: obs.tag } as Json,
+    metadata: { tag: obs.tag, ...obs.metadata } as Json,
     created_at: obs.createdAt,
     updated_at: obs.updatedAt,
   }), { onConflict: 'id' });

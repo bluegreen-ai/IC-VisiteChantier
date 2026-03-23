@@ -16,6 +16,7 @@ interface ObservationFormProps {
 
 export function ObservationForm({ missionId, observationCount, editingObservation, onDone }: ObservationFormProps) {
   const element = useSignal('');
+  const location = useSignal('');
   const tag = useSignal<ObservationTag>('general');
   const description = useSignal('');
   const cause = useSignal('');
@@ -33,6 +34,7 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
   useEffect(() => {
     if (editingObservation) {
       element.value = editingObservation.element ?? '';
+      location.value = (editingObservation.metadata?.location as string) ?? '';
       tag.value = editingObservation.tag;
       description.value = editingObservation.description;
       cause.value = editingObservation.cause ?? '';
@@ -58,6 +60,7 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
   function resetForm() {
     photos.value.forEach((p) => URL.revokeObjectURL(p.previewUrl));
     element.value = '';
+    location.value = '';
     tag.value = 'general';
     description.value = '';
     cause.value = '';
@@ -99,6 +102,9 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
         photoIds.push(id);
       }
 
+      const loc = location.value.trim();
+      const metadata = loc ? { location: loc } : undefined;
+
       if (isEditing && editingObservation) {
         await updateObservation(editingObservation.id!, {
           element: element.value.trim() || undefined,
@@ -106,6 +112,7 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
           description: description.value.trim(),
           cause: cause.value.trim() || undefined,
           action: action.value.trim() || undefined,
+          metadata: { ...editingObservation.metadata, ...metadata },
           photoIds,
         });
       } else {
@@ -116,6 +123,7 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
           description: description.value.trim(),
           cause: cause.value.trim() || undefined,
           action: action.value.trim() || undefined,
+          metadata,
           photoIds,
           sortOrder: observationCount,
         });
@@ -137,6 +145,13 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
         value={element.value}
         onChange={(v) => (element.value = v)}
         placeholder="Balcon 3ème, Poutre RDC, Zone affaissement..."
+      />
+
+      <TextField
+        label="Localisation"
+        value={location.value}
+        onChange={(v) => (location.value = v)}
+        placeholder="Bât. D, Cage 2, 3ème étage..."
       />
 
       {/* Tag selector — horizontal pills */}

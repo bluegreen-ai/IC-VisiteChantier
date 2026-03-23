@@ -87,11 +87,15 @@ export function MissionHeader({ mission, building, onSave }: MissionHeaderProps)
             {mission.visitedAt && <span class="text-xs text-gray-500">{mission.visitedAt}</span>}
           </div>
           {building && (
-            <p class="text-xs text-gray-400 mt-0.5 truncate">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); expanded.value = !expanded.value; }}
+              class="text-xs text-betc-teal mt-0.5 truncate block text-left underline decoration-betc-teal/30 touch-manipulation"
+            >
               {building.name}
               {building.address && ` — ${building.address}`}
               {building.city && `, ${building.city}`}
-            </p>
+            </button>
           )}
         </div>
         <button

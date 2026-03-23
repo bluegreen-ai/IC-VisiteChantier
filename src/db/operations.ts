@@ -114,12 +114,23 @@ export async function addObservation(
     updatedAt: now,
   } as Observation);
   syncRecord('observations', id).catch(() => {});
+
+  // Back-link photos to this observation so Supabase sync gets the observation_id
+  if (data.photoIds?.length) {
+    await linkPhotosToObservation(data.photoIds, id);
+  }
+
   return id;
 }
 
 export async function updateObservation(id: number, data: Partial<Observation>): Promise<void> {
   await db.observations.update(id, { ...data, syncStatus: 'pending', updatedAt: new Date().toISOString() });
   syncRecord('observations', id).catch(() => {});
+
+  // Back-link photos to this observation so Supabase sync gets the observation_id
+  if (data.photoIds?.length) {
+    await linkPhotosToObservation(data.photoIds, id);
+  }
 }
 
 export async function deleteObservation(id: number): Promise<void> {
@@ -180,6 +191,14 @@ export async function getObservationsForMission(missionId: number): Promise<Obse
 
 export async function getObservationCount(missionId: number): Promise<number> {
   return db.observations.where('missionId').equals(missionId).count();
+}
+
+/** Set observationId on photos and re-trigger sync so Supabase gets the link */
+async function linkPhotosToObservation(photoIds: number[], observationId: number): Promise<void> {
+  for (const pid of photoIds) {
+    await db.photos.update(pid, { observationId, syncStatus: 'pending' });
+    syncRecord('photos', pid).catch(() => {});
+  }
 }
 
 // --- Photos ---

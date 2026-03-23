@@ -139,7 +139,7 @@ function MissionCard({
             {status === 'completed' && <span class="text-xs text-green-600 font-medium">Terminée</span>}
           </div>
           {buildingName && (
-            <p class="text-sm text-gray-500 mt-1 truncate">{buildingName}</p>
+            <p class="text-sm text-betc-teal mt-1 truncate underline decoration-betc-teal/30">{buildingName}</p>
           )}
         </div>
         <button

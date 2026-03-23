@@ -114,6 +114,15 @@ Auto-loaded when you work on matching files. Each rule has a `paths:` frontmatte
 
 ---
 
+## Supabase
+
+- **Project**: `zgkvbjqlvebttbnkklpo` (buildingInspection) — shared instance, all BETClaw tables prefixed `betc_`
+- **Tables**: `betc_buildings`, `betc_missions`, `betc_observations`, `betc_photos`, `betc_messages`, `betc_reports`
+- **Storage bucket**: photos at `{user_id}/{mission_id}/{photo_id}.jpg`
+- **RLS**: enabled, scoped by `user_id` via `auth.uid()`
+
+---
+
 ## External Resources
 
 - [PRD](.claude/PRD.md) | [Status](.claude/STATUS.md) | [README](README.md)
