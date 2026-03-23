@@ -118,6 +118,7 @@ export function ObservationForm({ missionId, observationCount, editingObservatio
       } else {
         await addObservation({
           missionId,
+          observationType: 'note',
           element: element.value.trim() || undefined,
           tag: tag.value,
           description: description.value.trim(),

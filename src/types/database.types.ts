@@ -1425,11 +1425,15 @@ export type Database = {
           description: string | null
           disorder_type_id: string | null
           display_order: number | null
+          element: string | null
           id: string
           location: string | null
+          metadata: Json | null
           name: string
+          observation_type: string | null
           project_id: string
           recommendations: string | null
+          ref: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1441,11 +1445,15 @@ export type Database = {
           description?: string | null
           disorder_type_id?: string | null
           display_order?: number | null
+          element?: string | null
           id?: string
           location?: string | null
+          metadata?: Json | null
           name: string
+          observation_type?: string | null
           project_id: string
           recommendations?: string | null
+          ref?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1457,11 +1465,15 @@ export type Database = {
           description?: string | null
           disorder_type_id?: string | null
           display_order?: number | null
+          element?: string | null
           id?: string
           location?: string | null
+          metadata?: Json | null
           name?: string
+          observation_type?: string | null
           project_id?: string
           recommendations?: string | null
+          ref?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1525,6 +1537,51 @@ export type Database = {
         }
         Relationships: []
       }
+      edifice_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edifice_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "edifice_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edifice_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "shared_users_access_view"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       edifice_organizations: {
         Row: {
           created_at: string | null
@@ -1553,6 +1610,7 @@ export type Database = {
           file_size: number | null
           height: number
           id: string
+          message_id: string | null
           mime_type: string | null
           original_filename: string | null
           project_id: string
@@ -1575,6 +1633,7 @@ export type Database = {
           file_size?: number | null
           height: number
           id?: string
+          message_id?: string | null
           mime_type?: string | null
           original_filename?: string | null
           project_id: string
@@ -1597,6 +1656,7 @@ export type Database = {
           file_size?: number | null
           height?: number
           id?: string
+          message_id?: string | null
           mime_type?: string | null
           original_filename?: string | null
           project_id?: string
@@ -1609,6 +1669,13 @@ export type Database = {
           width?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "edifice_photos_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "edifice_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "edifice_photos_project_id_fkey"
             columns: ["project_id"]
@@ -3930,4 +3997,3 @@ export const Constants = {
     },
   },
 } as const
-

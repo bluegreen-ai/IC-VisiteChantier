@@ -4,6 +4,10 @@ export const OBSERVATION_TAGS = [
 ] as const;
 export type ObservationTag = typeof OBSERVATION_TAGS[number];
 
+/** Observation types (maps to edifice_disorders.observation_type) */
+export const OBSERVATION_TYPES = ['disorder', 'note', 'context'] as const;
+export type ObservationType = typeof OBSERVATION_TYPES[number];
+
 /** Mission types */
 export const MISSION_TYPES = [
   'diagnostic', 'suivi_chantier', 'reception', 'autre',
@@ -60,6 +64,8 @@ export interface Mission {
   type: MissionType;
   status: MissionStatus;
   brief?: string;
+  referenceNumber?: string;
+  missionContext?: string;
   visitedAt?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
@@ -72,11 +78,15 @@ export interface Observation {
   supabaseId?: string;
   syncStatus?: SyncStatus;
   missionId: number;
+  observationType: ObservationType;
   ref?: string;
   element?: string;
+  name?: string;
+  location?: string;
   description: string;
   cause?: string;
   action?: string;
+  recommendations?: string;
   tag: ObservationTag;
   photoIds: number[];
   sortOrder: number;
@@ -92,8 +102,21 @@ export interface Photo {
   syncStatus?: SyncStatus;
   missionId: number;
   observationId?: number;
+  messageId?: string;
   blob: Blob;
   filename: string;
+  createdAt: string;
+}
+
+/** Chat message stored in IndexedDB / synced to edifice_messages */
+export interface ChatMessage {
+  id?: number;
+  supabaseId?: string;
+  syncStatus?: SyncStatus;
+  missionId: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 

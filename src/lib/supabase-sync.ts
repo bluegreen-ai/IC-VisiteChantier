@@ -5,6 +5,17 @@ import { db } from '../db/schema';
 import type { Building, Mission, Observation, Photo, SyncQueueEntry } from '../types';
 import type { Json } from '../types/database.types';
 
+// IC Ingénieurs Conseils org — seeded in Edifice schema
+const IC_ORG_ID = '11111111-1111-1111-1111-111111111111';
+
+// Local Dexie table name → Supabase table name
+const SUPABASE_TABLE_MAP: Record<SyncQueueEntry['table'], string> = {
+  buildings: 'edifice_buildings',
+  missions: 'edifice_projects',
+  observations: 'edifice_disorders',
+  photos: 'edifice_photos',
+};
+
 // --- Signals ---
 
 export const syncPending = signal(0);
@@ -28,6 +39,12 @@ function clean<T extends Record<string, unknown>>(obj: T): T {
   ) as T;
 }
 
+/** Build full address from parts (Edifice has no city/postal_code columns) */
+function buildAddress(building: Building): string | null {
+  const parts = [building.address, building.postalCode, building.city].filter(Boolean);
+  return parts.length ? parts.join(', ') : null;
+}
+
 async function refreshPendingCount(): Promise<void> {
   const statuses = ['pending', 'error'];
   const counts = await Promise.all([
@@ -46,19 +63,14 @@ async function syncBuilding(building: Building): Promise<void> {
   const userId = getUserId();
   if (!userId || !building.supabaseId) return;
 
-  const { error } = await supabase.from('betc_buildings').upsert(clean({
+  const { error } = await supabase.from('edifice_buildings').upsert(clean({
     id: building.supabaseId,
-    user_id: userId,
+    organization_id: IC_ORG_ID,
     name: building.name,
-    address: building.address ?? null,
-    city: building.city ?? null,
-    postal_code: building.postalCode ?? null,
+    address: buildAddress(building),
     building_type: building.buildingType ?? null,
     latitude: building.latitude ?? null,
     longitude: building.longitude ?? null,
-    metadata: (building.metadata ?? null) as Json,
-    created_at: building.createdAt,
-    updated_at: building.updatedAt,
   }), { onConflict: 'id' });
 
   if (error) {
@@ -85,18 +97,15 @@ async function syncMission(mission: Mission): Promise<void> {
     if (mission.buildingId && !buildingSupabaseId) return;
   }
 
-  const { error } = await supabase.from('betc_missions').upsert(clean({
+  const { error } = await supabase.from('edifice_projects').upsert(clean({
     id: mission.supabaseId,
-    user_id: userId,
+    organization_id: IC_ORG_ID,
     building_id: buildingSupabaseId,
+    created_by: userId,
     name: mission.name,
-    type: mission.type ?? null,
+    reference_number: mission.referenceNumber ?? null,
+    mission_context: mission.missionContext ?? mission.brief ?? null,
     status: mission.status ?? 'active',
-    brief: mission.brief ?? null,
-    visited_at: mission.visitedAt ?? null,
-    metadata: (mission.metadata ?? null) as Json,
-    created_at: mission.createdAt,
-    updated_at: mission.updatedAt,
   }), { onConflict: 'id' });
 
   if (error) {
@@ -115,18 +124,20 @@ async function syncObservation(obs: Observation): Promise<void> {
   const mission = await db.missions.get(obs.missionId);
   if (!mission?.supabaseId) return; // Parent not synced yet
 
-  const { error } = await supabase.from('betc_observations').upsert(clean({
+  const { error } = await supabase.from('edifice_disorders').upsert(clean({
     id: obs.supabaseId,
-    mission_id: mission.supabaseId,
+    project_id: mission.supabaseId,
+    created_by: userId,
+    observation_type: obs.observationType ?? 'note',
+    name: obs.name ?? obs.ref ?? obs.element ?? 'Observation',
+    location: obs.location ?? null,
     ref: obs.ref ?? null,
     element: obs.element ?? null,
     description: obs.description,
     cause: obs.cause ?? null,
-    action: obs.action ?? null,
-    sort_order: obs.sortOrder ?? 0,
+    recommendations: obs.recommendations ?? obs.action ?? null,
+    display_order: obs.sortOrder ?? 0,
     metadata: { tag: obs.tag, ...obs.metadata } as Json,
-    created_at: obs.createdAt,
-    updated_at: obs.updatedAt,
   }), { onConflict: 'id' });
 
   if (error) {
@@ -145,19 +156,12 @@ async function syncPhoto(photo: Photo): Promise<void> {
   const mission = await db.missions.get(photo.missionId);
   if (!mission?.supabaseId) return;
 
-  // Resolve observation supabaseId (optional)
-  let obsSupabaseId: string | null = null;
-  if (photo.observationId) {
-    const obs = await db.observations.get(photo.observationId);
-    obsSupabaseId = obs?.supabaseId ?? null;
-  }
-
   const storagePath = `${userId}/${mission.supabaseId}/${photo.supabaseId}.jpg`;
 
   try {
     // 1. Upload blob to Storage
     const { error: uploadError } = await supabase.storage
-      .from('betc-photos')
+      .from('edifice-photos')
       .upload(storagePath, photo.blob, {
         contentType: 'image/jpeg',
         upsert: true,
@@ -166,13 +170,16 @@ async function syncPhoto(photo: Photo): Promise<void> {
     if (uploadError) throw uploadError;
 
     // 2. Upsert metadata row
-    const { error: dbError } = await supabase.from('betc_photos').upsert(clean({
+    // Note: edifice_photos requires width/height — use 0 as placeholder from field capture
+    const { error: dbError } = await supabase.from('edifice_photos').upsert(clean({
       id: photo.supabaseId,
-      mission_id: mission.supabaseId,
-      observation_id: obsSupabaseId,
+      project_id: mission.supabaseId,
+      uploaded_by: userId,
       storage_path: storagePath,
-      filename: photo.filename,
-      size_bytes: photo.blob.size,
+      original_filename: photo.filename,
+      file_size: photo.blob.size,
+      width: 0,
+      height: 0,
       created_at: photo.createdAt,
     }), { onConflict: 'id' });
 
@@ -192,7 +199,7 @@ export async function flushPendingSync(): Promise<void> {
 
   const statuses = ['pending', 'error'];
 
-  // Sync in dependency order: buildings → missions → observations → photos
+  // Sync in dependency order: buildings → projects → disorders → photos
   const buildings = await db.buildings.where('syncStatus').anyOf(statuses).toArray();
   for (const b of buildings) await syncBuilding(b);
 
@@ -224,14 +231,15 @@ async function flushDeleteQueue(): Promise<void> {
       // 1. Delete Storage files (non-fatal)
       if (entry.storagePaths?.length) {
         const { error } = await supabase.storage
-          .from('betc-photos')
+          .from('edifice-photos')
           .remove(entry.storagePaths);
         if (error) console.warn('Storage cleanup failed (non-fatal):', error);
       }
 
       // 2. Delete DB row
+      const tableName = SUPABASE_TABLE_MAP[entry.table];
       const { error } = await supabase
-        .from(`betc_${entry.table}` as 'betc_buildings')
+        .from(tableName as 'edifice_buildings')
         .delete()
         .eq('id', entry.supabaseId);
 
