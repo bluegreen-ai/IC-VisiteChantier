@@ -1,6 +1,6 @@
 # BETClaw - Current Status
 
-**Last Updated**: 2026-03-23
+**Last Updated**: 2026-03-24
 **Current Phase**: Post field-test iteration — bugs + UX simplification
 **Field test**: Longjumeau (La Poste), 2026-03-23 morning — first real use
 
@@ -9,20 +9,21 @@
 ## Field Test Debrief (2026-03-23)
 
 ### What worked
-- App works on the field, data captured, sync happened (on WiFi)
-- 10 observations + 15 photos captured for Longjumeau diagnostic mission
+- App works on the field, data captured, sync in real-time over 4G (1-3s latency confirmed via Supabase Storage timestamps)
+- 20 observations + 32 photos captured for Longjumeau diagnostic mission
 
 ### Critical insight
 **If BETClaw isn't drastically simpler than photo + Google Docs, engineers won't use it.**
 On site: climbing ladders, talking to building managers, measuring, one hand free at best. Every tap counts.
 
-### Bugs found
+### Bugs found (all fixed)
 
-| Bug | Severity | Detail |
-|-----|----------|--------|
-| **Photos not linked to observations** | Critical | `observation_id = null` on all 15 photos in Supabase — sync code doesn't pass observation_id |
-| **Mission not linked to building** | Important | Longjumeau mission has `building_id = null` despite "LA POSTE LONGJUMEAU" building existing |
-| **Sync only on WiFi?** | Investigate | All photos synced at once (10h43-11h08), likely when back on WiFi |
+| Bug | Severity | Fix |
+|-----|----------|-----|
+| **Photos not linked to observations** | Critical | `linkPhotosToObservation()` back-links photoIds after observation save (operations.ts) — ca3b351 |
+| **Mission not linked to building** | Important | Chain sync: building synced before mission upsert + building now mandatory at creation — ca3b351 |
+| **Sync badge stuck on "en attente"** | Cosmetic | Root cause: FK errors from above bugs cascading `syncStatus: 'error'`. Sync itself worked fine on 4G (1-3s latency). Fixed by chain sync eliminating FK errors — ca3b351 |
+| **Building type CHECK violation** | Blocker | BETClaw sent `logement_collectif`/`erp`/`tertiaire` but Edifice expects `apartment_building`/`commercial`/`industrial`. Added mapping in `supabase-sync.ts` — e9434fd |
 
 ### UX changes needed
 
@@ -43,10 +44,11 @@ On the field, no distinction between building context, disorder, history. Captur
 
 ### Priority order
 
-#### P0 — Bugs (must fix)
-- [ ] Fix photo sync: pass `observation_id` when upserting to `betc_photos`
-- [ ] Fix building linkage: ensure `building_id` propagates to mission in Supabase
-- [ ] Investigate WiFi-only sync — check if sync triggers on `navigator.onLine` or needs fetch-level check
+#### P0 — Bugs (all fixed)
+- [x] Fix photo sync: `linkPhotosToObservation()` back-links photos after obs save ✓
+- [x] Fix building linkage: chain sync + mandatory building at creation ✓
+- [x] Sync badge: not a WiFi issue — FK cascade errors from above bugs. 4G sync confirmed working (1-3s latency) ✓
+- [x] Fix building_type mapping: BETClaw → Edifice CHECK constraint values ✓ (2026-03-24)
 
 #### P1 — UX Simplification (field adoption)
 - [ ] Simplify observation form: title + photos + note only (remove tag, cause, action from field UI)
@@ -57,6 +59,8 @@ On the field, no distinction between building context, disorder, history. Captur
 #### P2 — Enhancements
 - [ ] Add photo crop (reference: Edifice project approach)
 - [ ] Office mode: allow adding tag/cause/action to observations after the fact
+- [ ] Building deduplication: search existing buildings before creating new ones
+- [ ] Observation vs disorder: clarify mapping between BETClaw "observations" and Edifice "disorders"
 
 ---
 
@@ -67,7 +71,7 @@ On the field, no distinction between building context, disorder, history. Captur
 | 1 | Supabase setup (6 tables + auth + storage + RLS) + rebranding | **Done** |
 | 2 | Auth email/password + Chat OpenClaw | **Done** |
 | 3 | Capture observations (photos + text + tags) | **Done** |
-| 4 | Supabase sync (upsert on save + photo upload + offline queue) | **Done** (with bugs) |
+| 4 | Supabase sync (upsert on save + photo upload + offline queue) | **Done** — E2E validated 2026-03-24: BETClaw → Supabase → Edifice webapp (building + mission + observations + photos) |
 | 4b | Agent skill: supabase-reader + JWT passthrough | **Done** |
 | 9 | Chat OpenClaw integrated in PWA | **Done** |
 | 8 | Field test Longjumeau | **Done** — bugs and UX feedback captured |
