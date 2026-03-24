@@ -27,6 +27,7 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
   const selectedAddress = useSignal<AddressSuggestion | null>(null);
   const matchedBuilding = useSignal<Building | null>(null);
   const isNewBuilding = useSignal(false);
+  const buildingConfirmed = useSignal(false);
   const buildingName = useSignal('');
   const buildingType = useSignal<BuildingType>('other');
 
@@ -57,9 +58,11 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
     if (match) {
       matchedBuilding.value = match;
       isNewBuilding.value = false;
+      buildingConfirmed.value = false;
     } else {
       matchedBuilding.value = null;
       isNewBuilding.value = true;
+      buildingConfirmed.value = false;
       buildingName.value = '';
     }
     addressError.value = '';
@@ -72,18 +75,21 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
       selectedAddress.value = null;
       matchedBuilding.value = null;
       isNewBuilding.value = false;
+      buildingConfirmed.value = false;
     }
   }
 
   function handleUseExisting() {
     // Confirmed — keep matchedBuilding, not new
     isNewBuilding.value = false;
+    buildingConfirmed.value = true;
   }
 
   function handleCreateNew() {
     // User wants a new building even though match was found
     matchedBuilding.value = null;
     isNewBuilding.value = true;
+    buildingConfirmed.value = false;
     buildingName.value = '';
   }
 
@@ -144,7 +150,7 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
   }
 
   const hasAddress = !!selectedAddress.value || addressText.value.trim().length > 0;
-  const buildingResolved = !!matchedBuilding.value || isNewBuilding.value;
+  const buildingResolved = (!!matchedBuilding.value && buildingConfirmed.value) || isNewBuilding.value;
 
   return (
     <div class="px-4 py-3">
@@ -164,30 +170,32 @@ export function MissionCreate({ onCreated, onCancel }: MissionCreateProps) {
 
           {/* Existing building match */}
           {selectedAddress.value && matchedBuilding.value && !isNewBuilding.value && (
-            <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
+            <div class={`rounded-lg p-3 ${buildingConfirmed.value ? 'bg-green-50 border border-green-300' : 'bg-teal-50 border border-teal-200'}`}>
               <p class="text-sm font-medium text-teal-800">
-                Bâtiment existant : {matchedBuilding.value.name}
+                {buildingConfirmed.value ? '✓ ' : ''}Bâtiment existant : {matchedBuilding.value.name}
               </p>
               <p class="text-xs text-teal-600 mt-0.5">
                 {matchedBuilding.value.address}
                 {matchedBuilding.value.city && `, ${matchedBuilding.value.city}`}
               </p>
-              <div class="flex gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={handleUseExisting}
-                  class="text-sm font-medium text-white bg-betc-teal px-3 py-1.5 rounded-lg touch-manipulation active:scale-95 min-h-[36px]"
-                >
-                  Utiliser
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateNew}
-                  class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg touch-manipulation active:scale-95 min-h-[36px]"
-                >
-                  Créer nouveau
-                </button>
-              </div>
+              {!buildingConfirmed.value && (
+                <div class="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={handleUseExisting}
+                    class="text-sm font-medium text-white bg-betc-teal px-3 py-1.5 rounded-lg touch-manipulation active:scale-95 min-h-[36px]"
+                  >
+                    Utiliser
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateNew}
+                    class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg touch-manipulation active:scale-95 min-h-[36px]"
+                  >
+                    Créer nouveau
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

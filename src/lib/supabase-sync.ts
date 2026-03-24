@@ -77,7 +77,7 @@ async function syncBuilding(building: Building): Promise<void> {
   const userId = getUserId();
   if (!userId || !building.supabaseId) return;
 
-  const { error } = await supabase.from('edifice_buildings').upsert(clean({
+  const payload = clean({
     id: building.supabaseId,
     organization_id: IC_ORG_ID,
     name: building.name,
@@ -85,7 +85,20 @@ async function syncBuilding(building: Building): Promise<void> {
     building_type: mapBuildingType(building.buildingType),
     latitude: building.latitude ?? null,
     longitude: building.longitude ?? null,
-  }), { onConflict: 'id' });
+  });
+
+  let { error } = await supabase
+    .from('edifice_buildings')
+    .upsert(payload, { onConflict: 'id' });
+
+  // If building_type violates CHECK constraint, retry without it
+  if (error?.code === '23514') {
+    console.warn('building_type rejected by CHECK constraint, syncing without it');
+    const { building_type: _, ...payloadWithoutType } = payload;
+    ({ error } = await supabase
+      .from('edifice_buildings')
+      .upsert(payloadWithoutType, { onConflict: 'id' }));
+  }
 
   if (error) {
     console.error('Sync building failed:', error);
