@@ -45,6 +45,20 @@ function buildAddress(building: Building): string | null {
   return parts.length ? parts.join(', ') : null;
 }
 
+/** Map BETClaw building types to Edifice CHECK constraint values */
+const BUILDING_TYPE_MAP: Record<string, string> = {
+  logement_collectif: 'apartment_building',
+  erp: 'commercial',
+  tertiaire: 'commercial',
+  industriel: 'industrial',
+  other: 'other',
+};
+
+function mapBuildingType(localType: string | undefined): string | null {
+  if (!localType) return null;
+  return BUILDING_TYPE_MAP[localType] ?? 'other';
+}
+
 async function refreshPendingCount(): Promise<void> {
   const statuses = ['pending', 'error'];
   const counts = await Promise.all([
@@ -68,7 +82,7 @@ async function syncBuilding(building: Building): Promise<void> {
     organization_id: IC_ORG_ID,
     name: building.name,
     address: buildAddress(building),
-    building_type: building.buildingType ?? null,
+    building_type: mapBuildingType(building.buildingType),
     latitude: building.latitude ?? null,
     longitude: building.longitude ?? null,
   }), { onConflict: 'id' });
