@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-**IC-VisiteChantier** - Site visit report generator for IC Ingénieurs Conseils. PWA for field data capture + Python script for DOCX report generation.
+**BETClaw** (IC-VisiteChantier) — Offline-first PWA for field data capture by BET engineers. Syncs to Supabase `edifice_*` tables shared with the Edifice webapp.
 
 **Full specifications**: See `.claude/PRD.md`
 
@@ -114,15 +114,45 @@ Auto-loaded when you work on matching files. Each rule has a `paths:` frontmatte
 
 ---
 
-## Supabase
+## Supabase (SHARED with Edifice)
 
-- **Project**: `zgkvbjqlvebttbnkklpo` (buildingInspection) — shared instance, all BETClaw tables prefixed `betc_`
-- **Tables**: `betc_buildings`, `betc_missions`, `betc_observations`, `betc_photos`, `betc_messages`, `betc_reports`
-- **Storage bucket**: photos at `{user_id}/{mission_id}/{photo_id}.jpg`
-- **RLS**: enabled, scoped by `user_id` via `auth.uid()`
+- **Project**: `zgkvbjqlvebttbnkklpo` (buildingInspection) — shared instance
+- **Tables**: `edifice_buildings`, `edifice_projects`, `edifice_disorders`, `edifice_photos`, `edifice_messages`
+- **Storage bucket**: `edifice-photos` — path `{user_id}/{project_id}/{photo_id}.jpg`
+- **RLS**: enabled, MVP "all authenticated" policies
+- **Org**: `IC_ORG_ID = '11111111-1111-1111-1111-111111111111'` (hardcoded in sync layer)
+
+---
+
+## Shared Backend with Edifice — CRITICAL
+
+This PWA shares Supabase schema and data with **Edifice** (`/Users/renaud/Projects/edifice`).
+
+**What is shared:**
+- All `edifice_*` Supabase tables and `edifice-photos` storage bucket
+- OpenClaw chat sessions (same `sessionKey` format: `agent:betclaw:{projectId}`)
+- Auth users and `edifice_profiles`
+
+**Coordination rules:**
+- **Never modify Supabase schema** (migrations, RLS, storage) without checking impact on Edifice
+- **Never rename/remove columns** on shared tables without updating the other project's sync layer
+- Column mapping lives in `src/lib/supabase-sync.ts` (this repo) — local Dexie names ≠ Supabase names
+- **Edifice is the schema owner** — migrations go in `edifice/supabase/migrations/`, not here
+- If you add a column that Edifice needs, create the migration in the Edifice repo
+- Read the Edifice schema before assuming column names: `edifice/supabase/migrations/00000000000000_initial_schema.sql`
+
+**Key mapping (Dexie → Supabase):**
+
+| Local (Dexie) | Supabase table | Notable column diffs |
+|---------------|----------------|----------------------|
+| `buildings` | `edifice_buildings` | `organization_id` (no `user_id`), no `city`/`postal_code` |
+| `missions` | `edifice_projects` | `mission_context` (not `brief`), `created_by`, no `type`/`visited_at` |
+| `observations` | `edifice_disorders` | `project_id`, `recommendations` (not `action`), `display_order`, `observation_type` |
+| `photos` | `edifice_photos` | `project_id`, `uploaded_by`, `original_filename`, `file_size`, no `observation_id` |
 
 ---
 
 ## External Resources
 
 - [PRD](.claude/PRD.md) | [Status](.claude/STATUS.md) | [README](README.md)
+- **Sibling project**: [Edifice](/Users/renaud/Projects/edifice) — bureau webapp on same Supabase

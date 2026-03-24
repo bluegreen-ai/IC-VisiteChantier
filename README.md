@@ -3,6 +3,7 @@
 Generic field capture tool for BET engineering firms. AI-powered chat adapts to each mission type — no rigid forms.
 
 **Built on:** IC-VisiteChantier codebase (evolved in-place)
+**Sibling project:** [Edifice](https://github.com/bluegreen-ai/edifice) — bureau webapp sharing the same Supabase backend
 
 ## How It Works
 
@@ -19,11 +20,12 @@ Generic field capture tool for BET engineering firms. AI-powered chat adapts to 
 - Offline-first — works without network, syncs on reconnect
 - Mission management with building registry
 
-### Backend (Supabase)
+### Backend (Supabase — shared with Edifice)
 - Auth via magic link (no passwords)
-- Postgres with RLS — buildings, missions, messages, photos, reports
-- Storage for photos and generated reports
-- Offline sync queue
+- Syncs to `edifice_*` tables (same schema as Edifice webapp)
+- Storage bucket: `edifice-photos`
+- Offline sync queue with automatic retry on reconnect
+- See [Edifice schema](https://github.com/bluegreen-ai/edifice/blob/main/supabase/migrations/00000000000000_initial_schema.sql) for the canonical table definitions
 
 ### AI Assistant (OpenClaw)
 - Contextual checklist generation from mission brief
@@ -104,6 +106,24 @@ template/
 ├── template_cr_visite_aulnay.docx  # IC-branded template
 └── context_visite_27022026.json    # Example context
 ```
+
+## Relationship with Edifice
+
+BETClaw and [Edifice](https://github.com/bluegreen-ai/edifice) form a **terrain ↔ bureau** pair:
+
+| | BETClaw (this repo) | Edifice |
+|---|---|---|
+| **Role** | Field capture (terrain) | Report writing (bureau) |
+| **Tech** | Preact PWA, offline-first | Next.js webapp |
+| **Data flow** | Writes observations, photos | Reads + enriches, generates DOCX |
+| **AI chat** | OpenClaw (field guidance) | OpenClaw + CopilotKit (report HITL) |
+
+**Shared resources** (changing these requires coordinating both projects):
+- Supabase `edifice_*` tables and `edifice-photos` bucket
+- OpenClaw chat sessions (`agent:betclaw:{projectId}`)
+- Auth users + `edifice_profiles` + `edifice_organizations`
+
+**Schema ownership**: Edifice owns the schema. Migrations go in `edifice/supabase/migrations/`. BETClaw adapts its sync layer (`src/lib/supabase-sync.ts`) to match.
 
 ## Documentation
 

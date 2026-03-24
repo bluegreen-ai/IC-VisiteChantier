@@ -71,16 +71,16 @@ Un assistant IA personnel pour les ingénieurs BET, qui les accompagne à **3 é
                        │                  │
             ┌──────────▼──────┐  ┌────────▼─────────────┐
             │    Supabase     │  │  OpenClaw Gateway     │
-            │                 │  │  (VPS existant)       │
-            │  Auth (magic    │  │                       │
-            │   link)         │  │  Agent "betclaw"      │
-            │  DB (6 tables   │  │  ├── SOUL.md (BET)    │
-            │   betc_*)       │  │  ├── Skills:          │
-            │  Storage        │  │  │   ├── supabase-    │
-            │   (photos)      │  │  │   │   reader       │
-            │                 │  │  │   └── report-      │
-            │                 │  │  │       generator    │
-            │                 │  │  └── Mémoire propre   │
+            │  (SHARED with   │  │  (VPS existant)       │
+            │   Edifice)      │  │                       │
+            │                 │  │  Agent "betclaw"      │
+            │  Auth (magic    │  │  ├── SOUL.md (BET)    │
+            │   link)         │  │  ├── Skills:          │
+            │  DB (edifice_*  │  │  │   ├── supabase-    │
+            │   tables)       │  │  │   │   reader       │
+            │  Storage        │  │  │   └── report-      │
+            │   (edifice-     │  │  │       generator    │
+            │    photos)      │  │  └── Mémoire propre   │
             └─────────────────┘  └──────────────────────┘
 ```
 
